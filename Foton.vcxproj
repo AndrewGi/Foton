@@ -155,6 +155,7 @@
   <ItemGroup>
     <ClInclude Include="2D.hpp" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="shader.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
