@@ -1,6 +1,7 @@
 #pragma 
 #include <mutex>
 #include <functional>
+#include "GL/glew.h"
 #include "GLFW/glfw3.h"
 namespace foton {
 	class window_t {
@@ -14,6 +15,18 @@ namespace foton {
 				throw std::logic_error("couldn't create glfw window");
 			}
 			glfwSetWindowUserPointer(_glfw_window, this); //set the user pointer to 'this' so we can access 'this' inside callbacks
+		}
+		window_t(const window_t&) = delete;
+		window_t(window_t&& other) {
+			*this = other;
+		}
+		window_t& operator=(const window_t&) = delete;
+		window_t&& operator=(window_t&& other) {
+			_glfw_window = other._glfw_window;
+			glfwSetWindowUserPointer(_glfw_window, this); //Update the userpoint to the new object
+			other._glfw_window = nullptr;
+			_on_focus_cb = other._on_focus_cb;
+			_on_loss_focus_cb = other._on_loss_focus_cb;
 		}
 		//returns width, height
 		std::pair<int, int> get_dimensions() {
@@ -55,7 +68,7 @@ namespace foton {
 		}
 		void render() {
 			make_context_current(); //only need to be called once
-			//glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT);
 			glfwSwapBuffers(_glfw_window);
 			glfwPollEvents();
 		}
