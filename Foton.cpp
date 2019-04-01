@@ -7,7 +7,10 @@
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	foton::window_t main_window("foton test", 640, 480);
+	while (!main_window.should_close()) {
+		main_window.render();
+	}
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu

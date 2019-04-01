@@ -47,6 +47,18 @@ namespace foton {
 		void set_on_loss_focus_cb(std::function<void(window_t&)> callback) {
 			_on_loss_focus_cb = callback;
 		}
+		bool should_close() {
+			return glfwWindowShouldClose(_glfw_window);
+		}
+		void close() {
+			glfwSetWindowShouldClose(_glfw_window, true);
+		}
+		void render() {
+			make_context_current(); //only need to be called once
+			//glClear(GL_COLOR_BUFFER_BIT);
+			glfwSwapBuffers(_glfw_window);
+			glfwPollEvents();
+		}
 	private:
 		static void _glfw_on_focus_cb(GLFWwindow* glfw_window, int state) {
 			window_t& window = *static_cast<window_t*>(glfwGetWindowUserPointer(glfw_window));
@@ -57,7 +69,7 @@ namespace foton {
 				window._on_loss_focus_cb(window);
 			}
 		}
-
+		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;
 		std::function<void(window_t&)> _on_focus_cb;
 		std::function<void(window_t&)> _on_loss_focus_cb;
