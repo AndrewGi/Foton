@@ -5,6 +5,7 @@
 namespace foton {
 	class window_t {
 	public:
+		
 		window_t(const char* title, int width, int height) {
 			static std::once_flag glfw_init_flag; //will only call glfwInit once during the duration of the program
 			std::call_once(glfw_init_flag, glfwInit); //this line does nothing if glfw_init_flag was called
@@ -27,7 +28,7 @@ namespace foton {
 		}
 		void hide() {
 			glfwHideWindow(_glfw_window);
-		}
+		}	
 		void show() {
 			glfwShowWindow(_glfw_window);
 		}
@@ -65,7 +66,7 @@ namespace foton {
 			if (state == GL_TRUE) { //focus gained
 				window._on_focus_cb(window);
 			}
-			else if (state == GL_FALSE) { //focus lossed
+			else if (state == GL_FALSE) { //focus lost
 				window._on_loss_focus_cb(window);
 			}
 		}
