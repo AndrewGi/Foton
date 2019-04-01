@@ -8,8 +8,11 @@
 int main()
 {
 	foton::window_t main_window("foton test", 640, 480);
-	while (!main_window.should_close()) {
+	foton::window_t second_window("foton second window", 100, 100);
+	main_window.set_clear_color(0.5f, 0.25f, 0.1f);
+	while (!(main_window.should_close() || second_window.should_close())) {
 		main_window.render();
+		second_window.render();
 	}
 }
 

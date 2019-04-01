@@ -1,9 +1,20 @@
 #pragma 
 #include <mutex>
 #include <functional>
+#include "GL/glew.h"
 #include "GLFW/glfw3.h"
 namespace foton {
 	class window_t {
+		struct gl_context_lock_t {
+			static std::mutex _gl_lock;
+			std::unique_lock<std::mutex> guard;
+			gl_context_lock_t(GLFWwindow* window) : guard(_gl_lock) {
+				glfwMakeContextCurrent(window);
+			}
+		};
+		gl_context_lock_t get_context() {
+			return gl_context_lock_t(_glfw_window);
+		}
 	public:
 		
 		window_t(const char* title, int width, int height) {
@@ -15,6 +26,18 @@ namespace foton {
 				throw std::logic_error("couldn't create glfw window");
 			}
 			glfwSetWindowUserPointer(_glfw_window, this); //set the user pointer to 'this' so we can access 'this' inside callbacks
+		}
+		window_t(const window_t&) = delete;
+		window_t(window_t&& other) {
+			*this = std::move(other);
+		}
+		window_t& operator=(const window_t&) = delete;
+		window_t&& operator=(window_t&& other) {
+			_glfw_window = other._glfw_window;
+			glfwSetWindowUserPointer(_glfw_window, this); //Update the userpoint to the new object
+			other._glfw_window = nullptr;
+			_on_focus_cb = other._on_focus_cb;
+			_on_loss_focus_cb = other._on_loss_focus_cb;
 		}
 		//returns width, height
 		std::pair<int, int> get_dimensions() {
@@ -39,9 +62,6 @@ namespace foton {
 			glfwSetWindowTitle(_glfw_window, new_name);
 		}
 		//Called before making and gl* calls
-		void make_context_current() {
-			glfwMakeContextCurrent(_glfw_window);
-		}
 		void set_on_focus_cb(std::function<void(window_t&)> callback) {
 			_on_focus_cb = callback;
 		}
@@ -54,9 +74,13 @@ namespace foton {
 		void close() {
 			glfwSetWindowShouldClose(_glfw_window, true);
 		}
+		void set_clear_color(float r, float g, float b) {
+			auto cl = get_context();
+			glClearColor(r, g, b, 1.0f);
+		}
 		void render() {
-			make_context_current(); //only need to be called once
-			//glClear(GL_COLOR_BUFFER_BIT);
+			auto cl = get_context();
+			glClear(GL_COLOR_BUFFER_BIT);
 			glfwSwapBuffers(_glfw_window);
 			glfwPollEvents();
 		}
@@ -76,3 +100,4 @@ namespace foton {
 		std::function<void(window_t&)> _on_loss_focus_cb;
 	};
 }
+std::mutex foton::window_t::gl_context_lock_t::_gl_lock;

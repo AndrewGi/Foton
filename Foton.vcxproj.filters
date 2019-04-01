@@ -21,6 +21,12 @@
     <ClInclude Include="window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="2D.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
