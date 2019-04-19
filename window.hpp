@@ -1,19 +1,22 @@
 #pragma 
 #include <mutex>
 #include <functional>
+#include <vector>
+#include <algorithm>
+#include "renderable.hpp"
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
 namespace foton {
 	class window_t {
-		struct gl_context_lock_t {
+		struct global_draw_lock_t {
 			static std::mutex _gl_lock;
 			std::unique_lock<std::mutex> guard;
-			gl_context_lock_t(GLFWwindow* window) : guard(_gl_lock) {
+			global_draw_lock_t(GLFWwindow* window) : guard(_gl_lock) {
 				glfwMakeContextCurrent(window);
 			}
 		};
-		gl_context_lock_t get_context() {
-			return gl_context_lock_t(_glfw_window);
+		global_draw_lock_t aquire_draw_lock() {
+			return global_draw_lock_t(_glfw_window);
 		}
 	public:
 		
@@ -75,12 +78,26 @@ namespace foton {
 			glfwSetWindowShouldClose(_glfw_window, true);
 		}
 		void set_clear_color(float r, float g, float b) {
-			auto cl = get_context();
+			auto cl = aquire_draw_lock();
 			glClearColor(r, g, b, 1.0f);
 		}
+		void add_renderable(const renderable_t* renderable_p) {
+			auto cl = aquire_draw_lock(); //Don't want to add anything while we drawing
+			_renderables.push_back(renderable_p);
+		}
 		void render() {
-			auto cl = get_context();
+			auto cl = aquire_draw_lock();
 			glClear(GL_COLOR_BUFFER_BIT);
+
+			/*
+				For now, just a for each through all the renderable objects
+
+				Later: hoping to have this multithreaded or more advance in some way
+			*/
+			std::for_each(_renderables.cbegin(), _renderables.cend(), [](const renderable_t* object) {
+				object->draw();
+			});
+
 			glfwSwapBuffers(_glfw_window);
 			glfwPollEvents();
 		}
@@ -94,10 +111,12 @@ namespace foton {
 				window._on_loss_focus_cb(window);
 			}
 		}
+
+		std::vector<const renderable_t*> _renderables; //maybe shouldn't use raw pointer?
 		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;
 		std::function<void(window_t&)> _on_focus_cb;
 		std::function<void(window_t&)> _on_loss_focus_cb;
 	};
 }
-std::mutex foton::window_t::gl_context_lock_t::_gl_lock;
+std::mutex foton::window_t::global_draw_lock_t::_gl_lock;

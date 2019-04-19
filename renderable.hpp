@@ -1,7 +1,7 @@
-
+#pragma once
 namespace foton {
-	class renderable_t {
-		virtual void draw() = 0;
+	struct renderable_t {
+		virtual void draw() const = 0;
 	};
 
 }
