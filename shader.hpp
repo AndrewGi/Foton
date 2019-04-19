@@ -44,25 +44,30 @@ namespace foton {
 		}
 		class shader_t {
 			static std::mutex _master_shader_mutex;
-
-			GLint id;
-			vertex_shader_t vertex_shader;
-			fragment_shader_t fragment_shader;
-			geometry_shader_t geometry_shader;
-			shader_t(vertex_shader_t vertex_shader, fragment_shader_t fragment_shader, geometry_shader_t geometry_shader) :
-				vertex_shader(vertex_shader), fragment_shader(fragment_shader), geometry_shader(geometry_shader) {
+			static constexpr GLuint INVALID_SHADER_ID = static_cast<GLuint>(-1);
+			GLuint id = INVALID_SHADER_ID;
+			shader_t(vertex_shader_t vertex_shader, fragment_shader_t fragment_shader, geometry_shader_t geometry_shader) {
 				id = glCreateProgram();
 				glAttachShader(id, vertex_shader);
 				glAttachShader(id, fragment_shader);
 				if (geometry_shader != invalid_shader)
 					glAttachShader(id, geometry_shader);
-				glLinkProgram(id); 
+				glLinkProgram(id);
 				//the shaders should be linked to the program so we can release our hold on the memory
 				glDeleteShader(vertex_shader);
 				glDeleteShader(fragment_shader);
 				if (geometry_shader != invalid_shader)
 					glDeleteShader(geometry_shader);
 			};
+			shader_t(const shader_t&) = delete;
+			shader_t(shader_t&& other) : id(other.id) {
+				other.id = INVALID_SHADER_ID;
+			}
+			~shader_t() {
+				if (id > 0) {
+					glDeleteProgram(id);
+				}
+			}
 		public:
 			static shader_t load_shader(const char* vertex_source, const char* fragment_source, const char* geometery_source = nullptr) {
 				return shader_t(load_vertex_shader(vertex_source), load_fragment_shader(fragment_source), geometery_source==nullptr?invalid_shader:load_geometry_shader(geometery_source));
