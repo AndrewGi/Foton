@@ -155,8 +155,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="2D.hpp" />
+    <ClInclude Include="drawer.hpp" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="renderable.hpp" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
@@ -171,6 +171,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="shapes.geom">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

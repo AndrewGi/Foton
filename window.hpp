@@ -3,7 +3,7 @@
 #include <functional>
 #include <vector>
 #include <algorithm>
-#include "renderable.hpp"
+#include "drawer.hpp"
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
 namespace foton {
@@ -81,9 +81,9 @@ namespace foton {
 			auto cl = aquire_draw_lock();
 			glClearColor(r, g, b, 1.0f);
 		}
-		void add_renderable(const renderable_t* renderable_p) {
+		void add_drawer(const drawer_t* drawer_p) {
 			auto cl = aquire_draw_lock(); //Don't want to add anything while we drawing
-			_renderables.push_back(renderable_p);
+			_drawers.push_back(drawer_p);
 		}
 		void render() {
 			auto cl = aquire_draw_lock();
@@ -94,8 +94,8 @@ namespace foton {
 
 				Later: hoping to have this multithreaded or more advance in some way
 			*/
-			std::for_each(_renderables.cbegin(), _renderables.cend(), [](const renderable_t* object) {
-				object->draw();
+			std::for_each(_drawers.cbegin(), _drawers.cend(), [](const drawer_t* drawer) {
+				drawer->draw();
 			});
 
 			glfwSwapBuffers(_glfw_window);
@@ -112,7 +112,7 @@ namespace foton {
 			}
 		}
 
-		std::vector<const renderable_t*> _renderables; //maybe shouldn't use raw pointer?
+		std::vector<const drawer_t*> _drawers; //maybe shouldn't use raw pointer?
 		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;
 		std::function<void(window_t&)> _on_focus_cb;

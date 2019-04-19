@@ -1,15 +1,14 @@
 #pragma once
+#include <vector>
 #include "Eigen/Sparse"
-#include "renderable.hpp"
+#include "drawer.hpp"
 namespace foton {
 	namespace gfx_2D { //TODO: Better name
 		using vec2d = Eigen::Vector2d;
 		namespace shapes {
-			struct shape_t : renderable_t {
+			struct shape_t {
 				vec2d position;
 				double rotation;
-				shape_t(vec2d position, double rotation) : position(position), rotation(rotation) {};
-				shape_t(vec2d position) : shape_t(position, 0.0) {};
 			};
 			struct square_t : shape_t {
 				double raduis;
@@ -19,6 +18,10 @@ namespace foton {
 			};
 			struct circle_t : shape_t {
 				double radius;
+			};
+			struct shape_drawer_t : drawer_t {
+				std::vector<square_t> squares;
+				std::vector<rectangle_t> rectangles;
 			};
 		}
 	}

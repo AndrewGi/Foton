@@ -27,7 +27,7 @@
     <ClInclude Include="shader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="renderable.hpp">
+    <ClInclude Include="drawer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -41,5 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="shapes.geom">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

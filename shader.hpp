@@ -2,11 +2,17 @@
 #include <string>
 #include <stdexcept>
 #include <shared_mutex>
+#include <filesystem>
+#include <fstream>
 #include "GL/glew.h"
 namespace foton {
 	namespace shader {
+		namespace filesystem = std::experimental::filesystem; //why is this still in experimental?
 		struct shader_error_t : std::logic_error {
 			shader_error_t(std::string msg) : std::logic_error(msg) {};
+		};
+		struct file_not_found_error_t : std::exception {
+			file_not_found_error_t(const filesystem::path& path) : std::exception(path.string()) {}
 		};
 		using vertex_shader_t = GLuint;
 		using fragment_shader_t = GLuint;
@@ -70,7 +76,28 @@ namespace foton {
 			}
 		public:
 			static shader_t load_shader(const char* vertex_source, const char* fragment_source, const char* geometery_source = nullptr) {
-				return shader_t(load_vertex_shader(vertex_source), load_fragment_shader(fragment_source), geometery_source==nullptr?invalid_shader:load_geometry_shader(geometery_source));
+				return shader_t(load_vertex_shader(vertex_source), load_fragment_shader(fragment_source), geometery_source == nullptr ? invalid_shader : load_geometry_shader(geometery_source));
+			}
+			static shader_t load_shader_from_path(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) {
+				auto load_file = [](const filesystem::path& filename) {
+					if (filename.empty()) {
+						return std::string();
+					}
+					else {
+						std::ifstream input(filename);
+						if (input.fail()) {
+							throw file_not_found_error_t(filename);
+						}
+						using file_iter = std::istreambuf_iterator<char>;
+						return std::string(file_iter(input), file_iter());
+					}
+				};
+				std::string vertex_source = load_file(vertex_path);
+				std::string fragment_source = load_file(fragment_path);
+				std::string geometry_source = load_file(geometry_source);
+				return load_shader(vertex_source.empty() ? nullptr : vertex_source.c_str(),
+					fragment_source.empty() ? nullptr : fragment_source.c_str(),
+					geometry_source.empty() ? nullptr : geometry_source.c_str());
 			}
 		};
 	}
