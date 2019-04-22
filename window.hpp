@@ -8,15 +8,15 @@
 #include "GLFW/glfw3.h"
 namespace foton {
 	class window_t {
-		struct global_draw_lock_t {
+		struct glfw_context_lock_t {
 			static std::mutex _gl_lock;
 			std::unique_lock<std::mutex> guard;
-			global_draw_lock_t(GLFWwindow* window) : guard(_gl_lock) {
+			glfw_context_lock_t(GLFWwindow* window) : guard(_gl_lock) {
 				glfwMakeContextCurrent(window);
 			}
 		};
-		global_draw_lock_t aquire_draw_lock() {
-			return global_draw_lock_t(_glfw_window);
+		glfw_context_lock_t aquire_glfw_lock() {
+			return glfw_context_lock_t(_glfw_window);
 		}
 	public:
 		
@@ -78,15 +78,15 @@ namespace foton {
 			glfwSetWindowShouldClose(_glfw_window, true);
 		}
 		void set_clear_color(float r, float g, float b) {
-			auto cl = aquire_draw_lock();
+			auto cl = aquire_glfw_lock();
 			glClearColor(r, g, b, 1.0f);
 		}
 		void add_drawer(const drawer_t* drawer_p) {
-			auto cl = aquire_draw_lock(); //Don't want to add anything while we drawing
+			auto cl = aquire_glfw_lock(); //Don't want to add anything while we drawing
 			_drawers.push_back(drawer_p);
 		}
 		void render() {
-			auto cl = aquire_draw_lock();
+			auto cl = aquire_glfw_lock();
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			/*
@@ -119,4 +119,4 @@ namespace foton {
 		std::function<void(window_t&)> _on_loss_focus_cb;
 	};
 }
-std::mutex foton::window_t::global_draw_lock_t::_gl_lock;
+std::mutex foton::window_t::glfw_context_lock_t::_gl_lock;

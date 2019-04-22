@@ -156,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="2D.hpp" />
     <ClInclude Include="drawer.hpp" />
+    <ClInclude Include="gl_buffer.hpp" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="shader.hpp" />
     <ClInclude Include="window.hpp" />
