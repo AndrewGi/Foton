@@ -54,6 +54,7 @@ namespace foton {
 			}
 		}
 		struct buffer_t {
+			using byte_t = uint8_t;
 			struct buffer_bind_t {
 				buffer_bind_t(GLuint buffer_id, GLenum target, std::mutex& mutex) : buffer_id(buffer_id), target(target), _lock(mutex) {
 					glBindBuffer(target, buffer_id);
@@ -79,6 +80,12 @@ namespace foton {
 			}
 			GLuint buffer_id() const {
 				return _buffer_id;
+			}
+			void upload_data(const byte_t* data, size_t size, GLenum usage = GL_STATIC_DRAW) {
+				if (usage != GL_STATIC_DRAW && usage != GL_STREAM_DRAW && usage != GL_DYNAMIC_DRAW)
+					throw wrong_enum_error_t(usage);
+				auto b = bind_buffer();
+				glBufferData(_target, size, data, usage);
 			}
 		private:
 			void set_target(GLenum target) {
