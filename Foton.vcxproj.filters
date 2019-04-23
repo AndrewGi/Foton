@@ -16,6 +16,9 @@
     <Filter Include="GL">
       <UniqueIdentifier>{7167314d-b8a9-4e91-ab92-75970afbc8e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\shaders">
+      <UniqueIdentifier>{112a976a-bbef-4724-8ae3-7a0139178b17}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -48,7 +51,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="shapes.geom">
-      <Filter>Header Files</Filter>
+      <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

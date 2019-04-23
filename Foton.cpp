@@ -3,17 +3,18 @@
 
 #include "pch.h"
 #include "window.hpp"
+#include "shader.hpp"
 #include "2D.hpp"
+#include "gl_buffer.hpp"
 #include <iostream>
 
 int main()
 {
 	foton::window_t main_window("foton test", 640, 480);
-	foton::window_t second_window("foton second window", 100, 100);
 	main_window.set_clear_color(0.5f, 0.25f, 0.1f);
-	while (!(main_window.should_close() || second_window.should_close())) {
+	
+	while (!main_window.should_close()) {
 		main_window.render();
-		second_window.render();
 	}
 }
 

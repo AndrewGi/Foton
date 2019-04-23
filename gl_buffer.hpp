@@ -1,28 +1,31 @@
 #pragma once
 #include <mutex>
+#include <stdexcept>
 #include "GL/glew.h"
+
 namespace foton {
 	namespace GL {
-		struct wrong_enum_error_t : std::exception {
+		using mutex = std::mutex;
+		using lock = std::unique_lock<mutex>;
+		struct wrong_enum_error_t : std::logic_error {
 			GLenum incorrect_enum;
-			wrong_enum_error_t(GLenum incorrect_enum) : incorrect_enum(incorrect_enum), std::exception("TODO: enum to string") {}
+			wrong_enum_error_t(GLenum incorrect_enum) : incorrect_enum(incorrect_enum), std::logic_error("TODO: enum to string") {}
 		};
 		namespace buffer_locks {
-			using mutex = std::mutex;
-			std::mutex vertex_attributes;
-			std::mutex atomic_counter;
-			std::mutex copy_read;
-			std::mutex dispatch_indirect;
-			std::mutex draw_indirect;
-			std::mutex element_array;
-			std::mutex pixel_pack;
-			std::mutex pixel_unpack;
-			std::mutex query;
-			std::mutex shader_storage;
-			std::mutex texture;
-			std::mutex transform_feedback;
-			std::mutex uniform;
-			std::mutex* get_mutex(GLenum buffer_enum) {
+			mutex vertex_attributes;
+			mutex atomic_counter;
+			mutex copy_read;
+			mutex dispatch_indirect;
+			mutex draw_indirect;
+			mutex element_array;
+			mutex pixel_pack;
+			mutex pixel_unpack;
+			mutex query;
+			mutex shader_storage;
+			mutex texture;
+			mutex transform_feedback;
+			mutex uniform;
+			mutex* get_mutex(GLenum buffer_enum) {
 				switch (buffer_enum) {
 				case GL_ARRAY_BUFFER:
 					return &vertex_attributes;
@@ -52,24 +55,34 @@ namespace foton {
 					return &uniform;
 				default:
 					throw wrong_enum_error_t{ buffer_enum };
+				}
 			}
 		}
 		struct buffer_t {
 			using byte_t = uint8_t;
 			struct buffer_bind_t {
-				buffer_bind_t(GLuint buffer_id, GLenum target, std::mutex& mutex) : buffer_id(buffer_id), target(target), _lock(mutex) {
+				buffer_bind_t(GLuint buffer_id, GLenum target, mutex& mutex) : buffer_id(buffer_id), target(target), _lock(mutex) {
 					glBindBuffer(target, buffer_id);
 				};
+				buffer_bind_t(const buffer_bind_t&) = delete;
+				buffer_bind_t(buffer_bind_t&& other) : buffer_id(other.buffer_id), target(other.target), _lock(std::move(other._lock)) {
+					other.buffer_id = 0;
+				}
 				~buffer_bind_t() {
-					glBindBuffer(target, 0); //unbind itself
+					if (buffer_id > 0) {
+						glBindBuffer(target, 0); //unbind itself
+					}
 				}
 				operator GLuint() const {
 					return target;
 				}
-				const GLuint buffer_id;
+				void upload_data(const byte_t* data, size_t size_in_bytes, GLenum usage = GL_STATIC_DRAW) {
+					glBufferData(target, size_in_bytes, data, usage);
+				}
+				GLuint buffer_id;
 				const GLenum target;
 			private:
-				const std::unique_lock<std::mutex> _lock;
+				lock _lock;
 			};
 			buffer_t() {
 				glGenBuffers(1, &_buffer_id);
@@ -104,17 +117,61 @@ namespace foton {
 				set_target(target);
 				return bind_buffer();
 			}
-			void upload_data(const byte_t* data, size_t size, GLenum usage = GL_STATIC_DRAW) {
-				auto id = bind_buffer();
-				glBufferData(id, size, data, usage);
+			template<class T>
+			void upload_Ts(const T* data, size_t count, GLenum usage = GL_STATIC_DRAW) {
+				auto bind = bind_buffer();
+				bind.upload_data(data, sizeof(T)*count, usage);
 			}
 		private:
 			GLuint _buffer_id = 0;
 			GLenum _target = 0;
-			std::mutex* _target_mutex = nullptr;
+			mutex* _target_mutex = nullptr;
 		};
 		struct vao_t {
-
+			
+			struct vao_bind_t{
+				static mutex _vao_bind_lock;
+				vao_bind_t(GLuint id) : id(id), _lock(_vao_bind_lock) {
+					glBindVertexArray(id);
+				}
+				vao_bind_t(const vao_bind_t&) = delete;
+				vao_bind_t(vao_bind_t&& other) : id(other.id), _lock(std::move(other._lock)) {
+					other.id = 0;
+				}
+				~vao_bind_t(){
+					glBindVertexArray(0); //Unbind itself (maybe not needed)
+				}
+				operator GLuint() const {
+					return id;
+				}
+				void assign_vertex_attribute(GLuint index, GLint size_per_element, GLenum type, GLsizei stride) {
+					glEnableVertexAttribArray(index);
+					glVertexAttribPointer(index, size_per_element, type, GL_FALSE, stride, 0);
+				}
+				template<class T>
+				buffer_t assign_attributes(GLuint index, GLint count, const T* data, GLsizei stride) {
+					GLenum type = []() {
+						if constexpr (std::is_same_v<T, float>) {
+							return GL_FLOAT;
+						} //TODO: add more types
+						static_assert(false, "unsupported vertex attribute type");
+					}();
+					buffer_t buf = buffer_t();
+					auto bind = buf.bind_buffer();
+					bind.upload_data(data, sizeof(T)*count);
+					assign_vertex_attribute(index, sizeof(T), type, stride);
+				}
+				GLuint id;
+				lock _lock;
+			};
+			vao_t() {
+				glGenVertexArrays(1, &_id);
+			}
+			vao_bind_t bind() {
+				return vao_bind_t(_id);
+			}
+		private:
+			GLuint _id;
 		};
 	}
 }

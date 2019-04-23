@@ -11,8 +11,8 @@ namespace foton {
 		struct shader_error_t : std::logic_error {
 			shader_error_t(std::string msg) : std::logic_error(msg) {};
 		};
-		struct file_not_found_error_t : std::exception {
-			file_not_found_error_t(const filesystem::path& path) : std::exception(path.string()) {}
+		struct file_not_found_error_t : std::runtime_error {
+			file_not_found_error_t(const filesystem::path& path) : std::runtime_error(path.string()) {}
 		};
 		using vertex_shader_t = GLuint;
 		using fragment_shader_t = GLuint;
@@ -54,9 +54,10 @@ namespace foton {
 			};
 			struct uniform_t {
 				void set_1f(float f) {
-					glUniform1f(uniform_location, f);
+					glProgramUniform1f(program, uniform_location, f);
 				}
 				//TODO: all the other glUniform functions
+				const GLuint program;
 				const GLint uniform_location;
 			};
 
@@ -89,7 +90,7 @@ namespace foton {
 				GLint uniform_location = glGetAttribLocation(id, name);
 				if (uniform_location == GL_INVALID_OPERATION)
 					throw shader_error_t("unable to get uniform location");
-				return uniform_t{ uniform_location };
+				return uniform_t{ id, uniform_location };
 			}
 		public:
 			static shader_t load_shader(const char* vertex_source, const char* fragment_source, const char* geometery_source = nullptr) {
