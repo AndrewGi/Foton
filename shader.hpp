@@ -49,6 +49,17 @@ namespace foton {
 			return geometry_shader;
 		}
 		class shader_t {
+			struct unknown_uniform_error_t : std::logic_error {
+				unknown_uniform_error_t(const char* uniform_error) : logic_error(uniform_error) {}
+			};
+			struct uniform_t {
+				void set_1f(float f) {
+					glUniform1f(uniform_location, f);
+				}
+				//TODO: all the other glUniform functions
+				const GLint uniform_location;
+			};
+
 			static std::mutex _master_shader_mutex;
 			static constexpr GLuint INVALID_SHADER_ID = static_cast<GLuint>(-1);
 			GLuint id = INVALID_SHADER_ID;
@@ -73,6 +84,12 @@ namespace foton {
 				if (id > 0) {
 					glDeleteProgram(id);
 				}
+			}
+			uniform_t get_uniform(const char* name) {
+				GLint uniform_location = glGetAttribLocation(id, name);
+				if (uniform_location == GL_INVALID_OPERATION)
+					throw shader_error_t("unable to get uniform location");
+				return uniform_t{ uniform_location };
 			}
 		public:
 			static shader_t load_shader(const char* vertex_source, const char* fragment_source, const char* geometery_source = nullptr) {

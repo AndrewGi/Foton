@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="GL">
+      <UniqueIdentifier>{7167314d-b8a9-4e91-ab92-75970afbc8e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -24,14 +27,14 @@
     <ClInclude Include="2D.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shader.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="drawer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gl_buffer.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>GL</Filter>
+    </ClInclude>
+    <ClInclude Include="shader.hpp">
+      <Filter>GL</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

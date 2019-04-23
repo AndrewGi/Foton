@@ -8,6 +8,7 @@ namespace foton {
 			wrong_enum_error_t(GLenum incorrect_enum) : incorrect_enum(incorrect_enum), std::exception("TODO: enum to string") {}
 		};
 		namespace buffer_locks {
+			using mutex = std::mutex;
 			std::mutex vertex_attributes;
 			std::mutex atomic_counter;
 			std::mutex copy_read;
@@ -62,32 +63,34 @@ namespace foton {
 				~buffer_bind_t() {
 					glBindBuffer(target, 0); //unbind itself
 				}
+				operator GLuint() const {
+					return target;
+				}
 				const GLuint buffer_id;
 				const GLenum target;
 			private:
-				std::unique_lock<std::mutex> _lock;
+				const std::unique_lock<std::mutex> _lock;
 			};
 			buffer_t() {
 				glGenBuffers(1, &_buffer_id);
 			}
 			buffer_t(const buffer_t&) = delete;
-			buffer_t(buffer_t&& other) : _buffer_id(other.buffer_id) {
-				other.buffer_id = 0;
+			buffer_t(buffer_t&& other) : _buffer_id(other._buffer_id), _target(other._target) {
+				other._buffer_id = 0;
+				other._target = 0;
 			}
 			~buffer_t(){
 				if (_buffer_id != 0)
 					glDeleteBuffers(1, &_buffer_id);
 			}
+			/*
+				**WARNING**
+				don't use buffer_id for any context sensitive calls
+				anything that needs glBindBuffers() called first should use bind_buffer() to safely bind the buffer
+			*/
 			GLuint buffer_id() const {
 				return _buffer_id;
 			}
-			void upload_data(const byte_t* data, size_t size, GLenum usage = GL_STATIC_DRAW) {
-				if (usage != GL_STATIC_DRAW && usage != GL_STREAM_DRAW && usage != GL_DYNAMIC_DRAW)
-					throw wrong_enum_error_t(usage);
-				auto b = bind_buffer();
-				glBufferData(_target, size, data, usage);
-			}
-		private:
 			void set_target(GLenum target) {
 				if (_target == target) //target already set
 					return;
@@ -101,9 +104,17 @@ namespace foton {
 				set_target(target);
 				return bind_buffer();
 			}
+			void upload_data(const byte_t* data, size_t size, GLenum usage = GL_STATIC_DRAW) {
+				auto id = bind_buffer();
+				glBufferData(id, size, data, usage);
+			}
+		private:
 			GLuint _buffer_id = 0;
 			GLenum _target = 0;
 			std::mutex* _target_mutex = nullptr;
+		};
+		struct vao_t {
+
 		};
 	}
 }
