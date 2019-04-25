@@ -156,8 +156,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="2D.hpp" />
+    <ClInclude Include="include\3D.hpp" />
     <ClInclude Include="include\drawer.hpp" />
     <ClInclude Include="include\gl\gl_objects.hpp" />
+    <ClInclude Include="include\model.hpp" />
     <ClInclude Include="include\window.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -169,16 +172,17 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <None Include="shapes.vert">
-      <FileType>Document</FileType>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="shapes.frag" />
-    <None Include="shapes.geom">
+    <None Include="resources\shaders\shapes.frag" />
+    <None Include="resources\shaders\shapes.geom" />
+    <None Include="resources\shaders\shapes.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\models\bunny.obj">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

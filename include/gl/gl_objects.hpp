@@ -183,7 +183,7 @@ namespace foton {
 		};
 		template<class T>
 		struct vbo_t : vbo_location_t, drawer_t {
-			void upload(const T* data, size_t count, GLenum usage = GL_STATIC_DRAW) {
+			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
 				
 					auto bind = buffer.bind_buffer();
 					glEnableClientState(GL_VERTEX_ARRAY);
@@ -192,12 +192,12 @@ namespace foton {
 			}
 			vbo_t(GLenum mode) : vbo_location_t{ mode, GL_ARRAY_BUFFER } {
 			}
-			vbo_t(const T* data, size_t count, GLenum usage, GLenum mode) : vbo_t(mode) {
+			vbo_t(const T* data, GLsizei count, GLenum usage, GLenum mode) : vbo_t(mode) {
 				upload(data, count, usage);
 			}
 			vbo_t(std::initializer_list<T> list, GLenum mode, GLenum usage = GL_STATIC_DRAW) : vbo_t(mode) {
 				std::vector<T> buffer(list);
-				upload(buffer.data(), buffer.size(), usage);
+				upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
 			GLsizei amount() const {
 				return buffer.size() / sizeof(T);

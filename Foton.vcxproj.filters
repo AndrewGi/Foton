@@ -22,6 +22,9 @@
     <Filter Include="Header Files\foton\gl">
       <UniqueIdentifier>{0baba027-388e-4492-90e5-f659a3178c34}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\models">
+      <UniqueIdentifier>{cc4290af-70ca-4bde-bea6-e8bc7b09276e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -36,6 +39,15 @@
     <ClInclude Include="include\gl\gl_objects.hpp">
       <Filter>Header Files\foton\gl</Filter>
     </ClInclude>
+    <ClInclude Include="include\model.hpp">
+      <Filter>Header Files\foton</Filter>
+    </ClInclude>
+    <ClInclude Include="2D.hpp">
+      <Filter>Header Files\foton</Filter>
+    </ClInclude>
+    <ClInclude Include="include\3D.hpp">
+      <Filter>Header Files\foton</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -47,14 +59,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="shapes.geom">
+    <None Include="resources\shaders\shapes.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="shapes.frag">
+    <None Include="resources\shaders\shapes.geom">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="shapes.vert">
+    <None Include="resources\shaders\shapes.vert">
       <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="resources\models\bunny.obj">
+      <Filter>Resource Files\models</Filter>
     </None>
   </ItemGroup>
 </Project>
