@@ -97,7 +97,7 @@ namespace foton {
 				};
 				std::string vertex_source = load_file(vertex_path);
 				std::string fragment_source = load_file(fragment_path);
-				std::string geometry_source = load_file(geometry_source);
+				std::string geometry_source = load_file(geometry_path);
 				return shader_t(vertex_source.empty() ? nullptr : vertex_source.c_str(),
 					fragment_source.empty() ? nullptr : fragment_source.c_str(),
 					geometry_source.empty() ? nullptr : geometry_source.c_str());
