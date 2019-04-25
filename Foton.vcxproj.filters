@@ -36,9 +36,6 @@
     <ClInclude Include="include\gl\gl_objects.hpp">
       <Filter>Header Files\foton\gl</Filter>
     </ClInclude>
-    <ClInclude Include="include\shader.hpp">
-      <Filter>Header Files\foton\gl</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

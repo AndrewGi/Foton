@@ -16,11 +16,16 @@ namespace foton {
 		}
 	}
 	static void init_glew() {
+		glewExperimental = true;
 		auto err = glewInit();
 		if (err != GLEW_OK) {
 			std::cerr << "initalization error: glew returned " << glewGetErrorString(err) << '\n';
 			return;
 		}
+		std::cout << "renderer : " << glGetString(GL_RENDERER) << '\n';
+		std::cout << "opengl version : " << glGetString(GL_VERSION) << '\n';
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
 	}
 	class window_t {
 		struct glfw_context_lock_t {
@@ -103,7 +108,7 @@ namespace foton {
 		}
 		void render() {
 			auto cl = aquire_glfw_lock();
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			/*
 				For now, just a for each through all the renderable objects

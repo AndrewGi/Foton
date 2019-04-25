@@ -7,12 +7,12 @@
 namespace foton {
 	namespace GL {
 		template<class T>
-		static constexpr GLenum _c_to_gl_type() {
+		static constexpr std::pair<GLenum, size_t> _c_to_gl_type() {
 			if constexpr (std::is_same_v<T, GLfloat>) {
-				return GL_FLOAT;
+				return { GL_FLOAT, 1 };
 			}
 			if constexpr (std::is_same_v<T, GLint>) {
-				return GL_INT;
+				return { GL_INT, 1 };
 			}
 			//TODO: add more types
 			static_assert(false, "unsupported vertex attribute type");
@@ -184,9 +184,14 @@ namespace foton {
 		template<class T>
 		struct vbo_t : vbo_location_t, drawer_t {
 			void upload(const T* data, size_t count, GLenum usage = GL_STATIC_DRAW) {
-				buffer.upload_Ts(data, count, usage);
+				
+					auto bind = buffer.bind_buffer();
+					glEnableClientState(GL_VERTEX_ARRAY);
+					glVertexPointer(count, GL_FLOAT, 0, 0);
+					bind.upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
 			}
-			vbo_t(GLenum mode) : vbo_location_t{ GL_ARRAY_BUFFER, mode } {}
+			vbo_t(GLenum mode) : vbo_location_t{ mode, GL_ARRAY_BUFFER } {
+			}
 			vbo_t(const T* data, size_t count, GLenum usage, GLenum mode) : vbo_t(mode) {
 				upload(data, count, usage);
 			}

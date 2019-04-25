@@ -16,7 +16,8 @@ int main()
 	foton::window_t main_window("foton test", 640, 480);
 	main_window.set_clear_color(0.5f, 0.25f, 0.1f);
 	auto shader = foton::shader::shader_t::load_shader_from_paths({ "shapes.frag", "shapes.vert"});
-	auto vbo = foton::GL::vbo_t<vec3f>({ {-.5,-.5, 0 }, {0, .5, 0}, {.5, -.5, 0} }, GL_TRIANGLES);
+	auto vbo = foton::GL::vbo_t<vec3f>({ {-.5,-.5, 0 }, {0, .5, 0}, {0,0,0} }, GL_TRIANGLES);
+	auto shader_bind = shader.use();
 	main_window.add_drawer(&vbo);
 	while (!main_window.should_close()) {
 		main_window.render();

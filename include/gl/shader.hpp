@@ -51,9 +51,39 @@ namespace foton {
 				}
 			};
 			//TODO: more specializations
+
+			struct shader_bind_t {
+				const GLuint program = 0;
+				shader_bind_t(GLuint program) : program(program), lock(_master_shader_mutex) {
+					glUseProgram(program);
+				}
+				shader_bind_t(const shader_bind_t&) = delete;
+				shader_bind_t(shader_bind_t&& other) : program(other.program), lock(std::move(other.lock)) {
+
+				}
+				~shader_bind_t() {
+					if (lock.owns_lock())
+						glUseProgram(0);
+				}
+			private:
+				static std::mutex _master_shader_mutex;
+				std::unique_lock<std::mutex> lock;
+			};
 			static constexpr GLuint INVALID_SHADER_ID = 0;
 
 			static GLuint load_shader(const char* code, GLenum which_shader) {
+				auto guess_shader = [](GLenum which_shader) {
+					switch (which_shader){
+					case GL_VERTEX_SHADER:
+						return "vertex_shader";
+					case GL_FRAGMENT_SHADER:
+						return "fragment_shader";
+					case GL_GEOMETRY_SHADER:
+						return "geometry_shader";
+					default:
+						return "unknown_shader";
+					}
+				};
 				if (code == nullptr) {
 					return INVALID_SHADER_ID;
 				}
@@ -63,13 +93,12 @@ namespace foton {
 				GLint success = 0;
 				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 				if (!success)
-					throw shader_error_t("shader compile failed");
+					throw shader_error_t(std::string("shader compile failed for ")+guess_shader(which_shader));
 				return shader;
 			}
 
 			GLuint id = INVALID_SHADER_ID;
 		public:
-			static std::mutex _master_shader_mutex;
 			shader_t(GLuint vertex_shader, GLuint fragment_shader, GLuint geometry_shader) {
 				if (vertex_shader == INVALID_SHADER_ID || fragment_shader == INVALID_SHADER_ID) {
 					throw shader_error_t("shader requires a valid vertex AND fragment shader atleast");
@@ -104,6 +133,9 @@ namespace foton {
 				if (uniform_location == GL_INVALID_OPERATION)
 					throw shader_error_t("unable to get uniform location");
 				return uniform_t<T>{ id, uniform_location };
+			}
+			shader_bind_t use() {
+				return shader_bind_t(id);
 			}
 			static shader_t load_shader_from_known_paths(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) {
 				auto load_file = [](const filesystem::path& filename) {
@@ -145,4 +177,4 @@ namespace foton {
 		};
 	}
 }
-std::mutex foton::shader::shader_t::_master_shader_mutex;
+std::mutex foton::shader::shader_t::shader_bind_t::_master_shader_mutex;

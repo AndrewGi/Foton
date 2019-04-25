@@ -158,7 +158,6 @@
   <ItemGroup>
     <ClInclude Include="include\drawer.hpp" />
     <ClInclude Include="include\gl\gl_objects.hpp" />
-    <ClInclude Include="include\shader.hpp" />
     <ClInclude Include="include\window.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
