@@ -48,6 +48,9 @@
     <ClInclude Include="include\3D.hpp">
       <Filter>Header Files\foton</Filter>
     </ClInclude>
+    <ClInclude Include="include\gl\shader.hpp">
+      <Filter>Header Files\foton\gl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -59,17 +62,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="resources\shaders\shapes.frag">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
     <None Include="resources\shaders\shapes.geom">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="resources\shaders\shapes.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
     <None Include="resources\models\bunny.obj">
       <Filter>Resource Files\models</Filter>
+    </None>
+    <None Include="resources\shaders\test1.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\test1.frag">
+      <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

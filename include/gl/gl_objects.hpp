@@ -3,19 +3,39 @@
 #include <stdexcept>
 #include "../drawer.hpp"
 #include "glew/glew.h"
+#include "3D.hpp"
 #include <vector>
 namespace foton {
 	namespace GL {
+		struct gl_error_t : std::runtime_error {
+			gl_error_t(GLenum err, std::string msg) : std::runtime_error(std::string(
+				"glError: (") + std::to_string(err) + ") " + msg
+			) {}
+		};
+		void check_gl_errors(const char* message) {
+			if constexpr (_DEBUG) { //Should probably use a macro but this is cleaner for now
+				if (auto err = glGetError(); err != GL_NO_ERROR)
+					throw gl_error_t(err, std::string(message));
+			} 
+		}
 		template<class T>
 		static constexpr std::pair<GLenum, size_t> _c_to_gl_type() {
 			if constexpr (std::is_same_v<T, GLfloat>) {
 				return { GL_FLOAT, 1 };
 			}
-			if constexpr (std::is_same_v<T, GLint>) {
+			else if constexpr (std::is_same_v<T, GLint>) {
 				return { GL_INT, 1 };
+			} 
+			else if constexpr (std::is_same_v<T, gfx_3D::vec3f>) {
+				return { GL_FLOAT, 3 };
 			}
-			//TODO: add more types
-			static_assert(false, "unsupported vertex attribute type");
+			else if constexpr (std::is_same_v<T, Eigen::Vector2f>) {
+				return { GL_FLOAT, 2 };
+			}
+			else {
+				//TODO: add more types
+				static_assert(false, "unsupported vertex attribute type");
+			}
 		}
 		using mutex = std::mutex;
 		using lock = std::unique_lock<mutex>;
@@ -127,16 +147,19 @@ namespace foton {
 				lock _lock;
 			};
 			
-			buffer_t() {
-				glGenBuffers(1, &_buffer_id);
+			buffer_t() : buffer_t(GL_ARRAY_BUFFER) {
 			}
-			buffer_t(GLenum target) : buffer_t() {
+			buffer_t(GLenum target)  {
+				glGenBuffers(1, &_buffer_id);
 				set_target(target);
 			}
 			buffer_t(const buffer_t&) = delete;
-			buffer_t(buffer_t&& other) : _buffer_id(other._buffer_id), _target(other._target) {
+			buffer_t(buffer_t&& other) : _target(other._target), _target_mutex(other._target_mutex),
+				_buffer_id(other._buffer_id), _size(other._size) {
 				other._buffer_id = 0;
 				other._target = 0;
+				other._target_mutex = nullptr;
+				other._size = 0;
 			}
 			~buffer_t(){
 				if (_buffer_id != 0)
@@ -177,20 +200,28 @@ namespace foton {
 			GLenum _target = 0;
 			mutex* _target_mutex = nullptr;
 		};
-		struct vbo_location_t {
+		struct vbo_location_t : drawer_t {
 			const GLenum mode;
 			buffer_t buffer;
+			GLsizei amount;
+			vbo_location_t(GLenum mode) : mode(mode), buffer(), amount(0) {
+
+			}
+			void draw() override {
+				auto bind = buffer.bind_buffer();
+				glDrawArrays(mode, 0, amount);
+			}
 		};
 		template<class T>
-		struct vbo_t : vbo_location_t, drawer_t {
+		struct vbo_t : vbo_location_t {
 			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
-				
-					auto bind = buffer.bind_buffer();
-					glEnableClientState(GL_VERTEX_ARRAY);
-					glVertexPointer(count, GL_FLOAT, 0, 0);
-					bind.upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
+				auto bind = buffer.bind_buffer();
+				glEnableClientState(GL_VERTEX_ARRAY); //TODO: move this to vao?
+				glVertexPointer(count, std::get<0>(_c_to_gl_type<T>()), 0, 0);
+				bind.upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
+				amount = count;
 			}
-			vbo_t(GLenum mode) : vbo_location_t{ mode, GL_ARRAY_BUFFER } {
+			vbo_t(GLenum mode) : vbo_location_t(mode) {
 			}
 			vbo_t(const T* data, GLsizei count, GLenum usage, GLenum mode) : vbo_t(mode) {
 				upload(data, count, usage);
@@ -199,14 +230,8 @@ namespace foton {
 				std::vector<T> buffer(list);
 				upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
-			GLsizei amount() const {
-				return buffer.size() / sizeof(T);
-			}
-			void draw() const override {
-				glDrawArrays(mode, 0, amount());
-			}
 		};
-		struct vao_t {
+		struct vao_t : drawer_t{
 			
 			struct vao_bind_t{
 				static mutex _vao_bind_lock;
@@ -223,22 +248,26 @@ namespace foton {
 				operator GLuint() const {
 					return _id;
 				}
-				void assign_vertex_attribute(buffer_t& buf, GLuint index, GLint size_per_element, GLenum type, GLsizei stride) {
+				void assign_vertex_attribute(buffer_t& buf, GLuint index, GLint amount_per_component, GLenum type, GLsizei stride) {
 					auto bind = buf.bind_buffer();
 					glEnableVertexAttribArray(index);
-					glVertexAttribPointer(index, size_per_element, type, GL_FALSE, stride, 0);
+					glVertexAttribPointer(index, amount_per_component, type, GL_FALSE, stride, 0);
 				}
 
 				template<class T, class... Args>
 				vbo_t<T>& emplace_vbo(GLuint index, GLsizei stride, Args&&... args) {
 					{
+
 						vbo_t<T> vbo = vbo_t<T>(std::move(args)...);
 						static_assert(sizeof(vbo_location_t) == sizeof(vbo_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
 						vbo_location_t& location = *reinterpret_cast<vbo_location_t*>(&vbo);
 						_vbos.emplace_back(std::move(location));
+
 					} //vbo is no longer valid
 					vbo_t<T>& vbo = *reinterpret_cast<vbo_t<T>*>(&*(_vbos.end() - 1));
-					assign_attributes(vbo.buffer, index, sizeof(T), _c_to_gl_type<T>(), stride);
+					auto gl_type_info = _c_to_gl_type<T>();
+					assign_vertex_attribute(vbo.buffer, index, static_cast<GLint>(std::get<1>(gl_type_info)), std::get<0>(gl_type_info), stride);
+
 					return vbo;
 				}
 				std::vector<vbo_location_t>& _vbos;
@@ -251,9 +280,14 @@ namespace foton {
 			vao_bind_t bind() {
 				return vao_bind_t(_id, _vbos);
 			}
+			void draw() override {
+				auto b = bind();
+				_vbos[0].draw();
+			}
 		private:
 			std::vector<vbo_location_t> _vbos;
 			GLuint _id;
 		};
 	}
 }
+std::mutex foton::GL::vao_t::vao_bind_t::_vao_bind_lock = {};

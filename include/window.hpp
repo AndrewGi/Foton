@@ -44,6 +44,8 @@ namespace foton {
 			static std::once_flag glew_init_flag; //will only call glfwInit once during the duration of the program
 			std::call_once(glfw_init_flag, init_glfw); //this line does nothing if glfw_init_flag was called
 			_glfw_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+			glfwSetKeyCallback(_glfw_window, _glfw_on_key_cb);
+			glfwSetWindowFocusCallback(_glfw_window, _glfw_on_focus_cb);
 			if (!_glfw_window) { //couldn't create a window for some reason
 				glfwTerminate();
 				throw std::logic_error("couldn't create glfw window");
@@ -115,12 +117,18 @@ namespace foton {
 
 				Later: hoping to have this multithreaded or more advance in some way
 			*/
-			std::for_each(_drawers.cbegin(), _drawers.cend(), [](const drawer_t* drawer) {
+			std::for_each(_drawers.cbegin(), _drawers.cend(), [](drawer_t* drawer) {
 				drawer->draw();
 			});
 
 			glfwSwapBuffers(_glfw_window);
 			glfwPollEvents();
+		}
+		using keyboard_key_t = int;
+		using keyboard_action_t = int;
+		using keyboard_mods_t = int;
+		void set_key_callback(std::function<void(window_t&, keyboard_key_t, keyboard_action_t, keyboard_mods_t)> callback) {
+			_on_key_cb = callback;
 		}
 	private:
 		static void _glfw_on_focus_cb(GLFWwindow* glfw_window, int state) {
@@ -132,12 +140,16 @@ namespace foton {
 				window._on_loss_focus_cb(window);
 			}
 		}
-
+		static void _glfw_on_key_cb(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
+			window_t& window = *static_cast<window_t*>(glfwGetWindowUserPointer(glfw_window));
+			window._on_key_cb(window, key, action, mods);
+		}
 		std::vector<drawer_t*> _drawers = {}; //maybe shouldn't use raw pointer?
 		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;
 		std::function<void(window_t&)> _on_focus_cb;
 		std::function<void(window_t&)> _on_loss_focus_cb;
+		std::function<void(window_t&, keyboard_key_t, keyboard_action_t, keyboard_mods_t)> _on_key_cb;
 	};
 }
 std::mutex foton::window_t::glfw_context_lock_t::_gl_lock;

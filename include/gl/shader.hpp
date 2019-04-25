@@ -4,6 +4,7 @@
 #include <shared_mutex>
 #include <filesystem>
 #include <fstream>
+#include "../drawer.hpp"
 #include "glew/glew.h"
 namespace foton {
 	namespace shader {
@@ -15,42 +16,48 @@ namespace foton {
 			file_not_found_error_t(const filesystem::path& path) : std::runtime_error(path.string()) {}
 			file_not_found_error_t(const char* msg) : std::runtime_error(msg) {}
 		};
+
+		struct uniform_location_t {
+			//TODO: all the other glUniform functions
+			//TODO: update on reload
+			const GLuint& program;
+			const GLint location;
+		};
+		template<class T>
+		struct uniform_t {
+			static_assert(sizeof(T) == 0, "not implemented uniform type");
+		};
+		template<>
+		struct uniform_t<float> : uniform_location_t {
+			explicit operator float() {
+				float out = 0.f;
+				glGetUniformfv(program, location, &out);
+				return out;
+			}
+			float operator=(float x) {
+				glProgramUniform1f(program, location, x);
+				return x;
+			}
+
+		};
+		template<>
+		struct uniform_t<int> : uniform_location_t {
+			explicit operator int() {
+				int out = 0;
+				glGetUniformiv(program, location, &out);
+				return out;
+			}
+			int operator=(int x) {
+				glProgramUniform1i(program, location, x);
+				return x;
+			}
+		};
+		//TODO: more specializations
 		class shader_t {
+		public:
 			struct unknown_uniform_error_t : std::logic_error {
 				unknown_uniform_error_t(const char* uniform_error) : logic_error(uniform_error) {}
 			};
-			struct uniform_location_t {
-				//TODO: all the other glUniform functions
-				const GLuint program;
-				const GLint location;
-			};
-			template<class T>
-			struct uniform_t {
-				static_assert(sizeof(T) == 0, "not implemented uniform type");
-			};
-			template<>
-			struct uniform_t<float> : uniform_location_t {
-				explicit operator float() {
-					float out = 0.f;
-					glGetUniformfv(program, location, &out);
-					return out;
-				}
-				float operator=(float x) {
-					glProgramUniform1f(program, location, x);
-				}
-			};
-			template<>
-			struct uniform_t<int> : uniform_location_t {
-				explicit operator int() {
-					int out = 0;
-					glGetUniformiv(program, location, &out);
-					return out;
-				}
-				int operator=(int x) {
-					glProgramUniform1i(program, location, x);
-				}
-			};
-			//TODO: more specializations
 
 			struct shader_bind_t {
 				const GLuint program = 0;
@@ -65,8 +72,8 @@ namespace foton {
 					if (lock.owns_lock())
 						glUseProgram(0);
 				}
-			private:
 				static std::mutex _master_shader_mutex;
+			private:
 				std::unique_lock<std::mutex> lock;
 			};
 			static constexpr GLuint INVALID_SHADER_ID = 0;
@@ -115,29 +122,97 @@ namespace foton {
 				glDeleteShader(fragment_shader);
 				if (geometry_shader != INVALID_SHADER_ID)
 					glDeleteShader(geometry_shader);
+
+				if (auto err = glGetError(); err != GL_NO_ERROR)
+					throw shader_error_t(std::string("glError after shader_t construction: ") + std::to_string(err));
 			};
 			shader_t(const char* vertex_source, const char* fragment_source, const char* geometry_source) :
 				shader_t(load_shader(vertex_source, GL_VERTEX_SHADER), load_shader(fragment_source, GL_FRAGMENT_SHADER), load_shader(geometry_source, GL_GEOMETRY_SHADER)) {};
 			shader_t(const shader_t&) = delete;
+			shader_t operator=(const shader_t&) = delete;
 			shader_t(shader_t&& other) : id(other.id) {
 				other.id = INVALID_SHADER_ID;
 			}
-			~shader_t() {
+			shader_t operator=(shader_t&& other) {
+				std::swap(*this, other);
+			}
+			void update_from(shader_t&& other) {
+				auto lock = std::unique_lock<std::mutex>(shader_bind_t::_master_shader_mutex);
 				if (id > 0) {
 					glDeleteProgram(id);
 				}
+				id = other.id;
+				other.id = 0;
+			}
+			~shader_t() {
+				delete_program();
 			}
 			template<class T>
 			uniform_t<T> get_uniform(const char* name) {
-				GLint uniform_location = glGetAttribLocation(id, name);
-				if (uniform_location == GL_INVALID_OPERATION)
+				GLint uniform_location = glGetUniformLocation(id, name);
+				if (uniform_location == -1)
 					throw shader_error_t("unable to get uniform location");
 				return uniform_t<T>{ id, uniform_location };
 			}
 			shader_bind_t use() {
 				return shader_bind_t(id);
 			}
-			static shader_t load_shader_from_known_paths(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) {
+			struct shader_drawer_wrapper_t : drawer_t {
+				shader_t& parent;
+				drawer_t& drawer;
+				shader_drawer_wrapper_t(shader_t& shader, drawer_t& drawer) : parent(shader), drawer(drawer) {}
+				void draw() override {
+					auto shader_bind = parent.use();
+					drawer.draw();
+				}
+			};
+			shader_drawer_wrapper_t wrap(drawer_t& drawer) {
+				return shader_drawer_wrapper_t(*this, drawer);
+			}
+			private:
+				void delete_program() {
+
+					if (id > 0) {
+						auto lock = std::unique_lock<std::mutex>(shader_bind_t::_master_shader_mutex);
+						glDeleteProgram(id);
+						id = INVALID_SHADER_ID;
+					}
+				}
+		};
+		struct shader_with_paths_t {
+			const filesystem::path vertex_path;
+			const filesystem::path fragment_path;
+			const filesystem::path geometry_path;
+			shader_with_paths_t(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) :
+			 vertex_path(vertex_path), fragment_path(fragment_path), geometry_path(geometry_path), _shader(load_new_shader()) {
+			}
+			void reload_shader() {
+				_shader.update_from(load_new_shader());
+			}
+			static shader_with_paths_t guess_filetypes(std::initializer_list<const filesystem::path> paths) {
+				using path = filesystem::path;
+				auto find_path = [&](std::string extension, bool no_throw = false) {
+					for (const path& p : paths) {
+						if (p.extension() == extension)
+							return p;
+					}
+					if (no_throw)
+						return path();
+					throw file_not_found_error_t((extension + " shader file not found").c_str());
+				};
+				const path vertex_path = find_path(".vert");
+				const path fragment_path = find_path(".frag");
+				const path geometry_path = find_path(".geom", true);
+				return shader_with_paths_t(vertex_path, fragment_path, geometry_path);
+			}
+			shader_t& shader() {
+				return _shader;
+			}
+		private:
+			shader_t load_new_shader() {
+				if (auto err = glGetError(); err != GL_NO_ERROR)
+					throw shader_error_t(std::string("trying to load new shader while glError is ") + std::to_string(err));
+			
 				auto load_file = [](const filesystem::path& filename) {
 					if (filename.empty()) {
 						return std::string();
@@ -158,22 +233,7 @@ namespace foton {
 					fragment_source.empty() ? nullptr : fragment_source.c_str(),
 					geometry_source.empty() ? nullptr : geometry_source.c_str());
 			}
-			static shader_t load_shader_from_paths(std::initializer_list<const filesystem::path> paths) {
-				using path = filesystem::path;
-				auto find_path = [&](std::string extension, bool no_throw = false) {
-					for (const path& p : paths) {
-						if (p.extension() == extension)
-							return p;
-					}
-					if (no_throw)
-						return path();
-					throw file_not_found_error_t((extension + " shader file not found").c_str());
-				};
-				const path vertex_path = find_path(".vert");
-				const path fragment_path = find_path(".frag");
-				const path geometry_path = find_path(".geom", true);
-				return load_shader_from_known_paths(vertex_path, fragment_path, geometry_path);
-			}
+			shader_t _shader;
 		};
 	}
 }

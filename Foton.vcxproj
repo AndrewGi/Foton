@@ -160,6 +160,7 @@
     <ClInclude Include="include\3D.hpp" />
     <ClInclude Include="include\drawer.hpp" />
     <ClInclude Include="include\gl\gl_objects.hpp" />
+    <ClInclude Include="include\gl\shader.hpp" />
     <ClInclude Include="include\model.hpp" />
     <ClInclude Include="include\window.hpp" />
     <ClInclude Include="pch.h" />
@@ -177,9 +178,9 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="resources\shaders\shapes.frag" />
+    <None Include="resources\shaders\test1.frag" />
     <None Include="resources\shaders\shapes.geom" />
-    <None Include="resources\shaders\shapes.vert" />
+    <None Include="resources\shaders\test1.vert" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\models\bunny.obj">
