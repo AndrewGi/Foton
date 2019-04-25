@@ -53,5 +53,11 @@
     <None Include="shapes.geom">
       <Filter>Resource Files\shaders</Filter>
     </None>
+    <None Include="shapes.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shapes.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

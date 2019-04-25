@@ -64,7 +64,6 @@ namespace foton {
 				throw std::invalid_argument("window rename called with nullptr");
 			glfwSetWindowTitle(_glfw_window, new_name);
 		}
-		//Called before making and gl* calls
 		void set_on_focus_cb(std::function<void(window_t&)> callback) {
 			_on_focus_cb = callback;
 		}

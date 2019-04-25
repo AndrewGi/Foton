@@ -13,41 +13,8 @@ namespace foton {
 		};
 		struct file_not_found_error_t : std::runtime_error {
 			file_not_found_error_t(const filesystem::path& path) : std::runtime_error(path.string()) {}
+			file_not_found_error_t(const char* msg) : std::runtime_error(msg) {}
 		};
-		using vertex_shader_t = GLuint;
-		using fragment_shader_t = GLuint;
-		using geometry_shader_t = GLuint;
-		static constexpr GLuint invalid_shader = static_cast<GLuint>(-1);
-		vertex_shader_t load_vertex_shader(const char* code) {
-			vertex_shader_t vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-			glShaderSource(vertex_shader, 1, &code, nullptr);
-			glCompileShader(vertex_shader);
-			GLint success = 0;
-			glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-			if (!success)
-				throw shader_error_t("vertex shader compile failed");
-			return vertex_shader;
-		}
-		fragment_shader_t load_fragment_shader(const char* code) {
-			fragment_shader_t fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-			glShaderSource(fragment_shader, 1, &code, nullptr);
-			glCompileShader(fragment_shader);
-			GLint success = 0;
-			glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-			if (!success)
-				throw shader_error_t("fragment shader compile failed");
-			return fragment_shader;
-		}
-		geometry_shader_t load_geometry_shader(const char* code) {
-			geometry_shader_t geometry_shader = glCreateShader(GL_GEOMETRY_SHADER);
-			glShaderSource(geometry_shader, 1, &code, nullptr);
-			glCompileShader(geometry_shader);
-			GLint success = 0;
-			glGetShaderiv(geometry_shader, GL_COMPILE_STATUS, &success);
-			if (!success)
-				throw shader_error_t("geometry shader compile failed");
-			return geometry_shader;
-		}
 		class shader_t {
 			struct unknown_uniform_error_t : std::logic_error {
 				unknown_uniform_error_t(const char* uniform_error) : logic_error(uniform_error) {}
@@ -61,22 +28,44 @@ namespace foton {
 				const GLint uniform_location;
 			};
 
-			static std::mutex _master_shader_mutex;
 			static constexpr GLuint INVALID_SHADER_ID = static_cast<GLuint>(-1);
+
+			static GLuint load_shader(const char* code, GLenum which_shader) {
+				if (code == nullptr) {
+					return INVALID_SHADER_ID;
+				}
+				GLuint shader = glCreateShader(which_shader);
+				glShaderSource(shader, 1, &code, nullptr);
+				glCompileShader(shader);
+				GLint success = 0;
+				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+				if (!success)
+					throw shader_error_t("shader compile failed");
+				return shader;
+			}
+
 			GLuint id = INVALID_SHADER_ID;
-			shader_t(vertex_shader_t vertex_shader, fragment_shader_t fragment_shader, geometry_shader_t geometry_shader) {
+		public:
+			static std::mutex _master_shader_mutex;
+			shader_t(GLuint vertex_shader, GLuint fragment_shader, GLuint geometry_shader) {
+				if (vertex_shader == INVALID_SHADER_ID || fragment_shader == INVALID_SHADER_ID) {
+					throw shader_error_t("shader requires a valid vertex AND fragment shader atleast");
+				}
+					
 				id = glCreateProgram();
 				glAttachShader(id, vertex_shader);
 				glAttachShader(id, fragment_shader);
-				if (geometry_shader != invalid_shader)
+				if (geometry_shader != INVALID_SHADER_ID)
 					glAttachShader(id, geometry_shader);
 				glLinkProgram(id);
 				//the shaders should be linked to the program so we can release our hold on the memory
 				glDeleteShader(vertex_shader);
 				glDeleteShader(fragment_shader);
-				if (geometry_shader != invalid_shader)
+				if (geometry_shader != INVALID_SHADER_ID)
 					glDeleteShader(geometry_shader);
 			};
+			shader_t(const char* vertex_source, const char* fragment_source, const char* geometry_source) :
+				shader_t(load_shader(vertex_source, GL_VERTEX_SHADER), load_shader(fragment_source, GL_FRAGMENT_SHADER), load_shader(geometry_source, GL_GEOMETRY_SHADER)) {};
 			shader_t(const shader_t&) = delete;
 			shader_t(shader_t&& other) : id(other.id) {
 				other.id = INVALID_SHADER_ID;
@@ -92,11 +81,7 @@ namespace foton {
 					throw shader_error_t("unable to get uniform location");
 				return uniform_t{ id, uniform_location };
 			}
-		public:
-			static shader_t load_shader(const char* vertex_source, const char* fragment_source, const char* geometery_source = nullptr) {
-				return shader_t(load_vertex_shader(vertex_source), load_fragment_shader(fragment_source), geometery_source == nullptr ? invalid_shader : load_geometry_shader(geometery_source));
-			}
-			static shader_t load_shader_from_path(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) {
+			static shader_t load_shader_from_known_paths(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) {
 				auto load_file = [](const filesystem::path& filename) {
 					if (filename.empty()) {
 						return std::string();
@@ -113,9 +98,25 @@ namespace foton {
 				std::string vertex_source = load_file(vertex_path);
 				std::string fragment_source = load_file(fragment_path);
 				std::string geometry_source = load_file(geometry_source);
-				return load_shader(vertex_source.empty() ? nullptr : vertex_source.c_str(),
+				return shader_t(vertex_source.empty() ? nullptr : vertex_source.c_str(),
 					fragment_source.empty() ? nullptr : fragment_source.c_str(),
 					geometry_source.empty() ? nullptr : geometry_source.c_str());
+			}
+			static shader_t load_shader_from_paths(std::initializer_list<const filesystem::path> paths) {
+				using path = filesystem::path;
+				auto find_path = [&](std::string extension, bool no_throw = false) {
+					for (const path& p : paths) {
+						if (p.extension() == extension)
+							return p;
+					}
+					if (no_throw)
+						return path();
+					throw file_not_found_error_t((extension + " shader file not found").c_str());
+				};
+				const path vertex_path = find_path(".vert");
+				const path fragment_path = find_path(".frag");
+				const path geometry_path = find_path(".geom", true);
+				return load_shader_from_known_paths(vertex_path, fragment_path, geometry_path);
 			}
 		};
 	}
