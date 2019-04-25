@@ -4,7 +4,7 @@
 #include <shared_mutex>
 #include <filesystem>
 #include <fstream>
-#include "GL/glew.h"
+#include "glew/glew.h"
 namespace foton {
 	namespace shader {
 		namespace filesystem = std::experimental::filesystem; //why is this still in experimental?
@@ -19,16 +19,39 @@ namespace foton {
 			struct unknown_uniform_error_t : std::logic_error {
 				unknown_uniform_error_t(const char* uniform_error) : logic_error(uniform_error) {}
 			};
-			struct uniform_t {
-				void set_1f(float f) {
-					glProgramUniform1f(program, uniform_location, f);
-				}
+			struct uniform_location_t {
 				//TODO: all the other glUniform functions
 				const GLuint program;
-				const GLint uniform_location;
+				const GLint location;
 			};
-
-			static constexpr GLuint INVALID_SHADER_ID = static_cast<GLuint>(-1);
+			template<class T>
+			struct uniform_t {
+				static_assert(sizeof(T) == 0, "not implemented uniform type");
+			};
+			template<>
+			struct uniform_t<float> : uniform_location_t {
+				explicit operator float() {
+					float out = 0.f;
+					glGetUniformfv(program, location, &out);
+					return out;
+				}
+				float operator=(float x) {
+					glProgramUniform1f(program, location, x);
+				}
+			};
+			template<>
+			struct uniform_t<int> : uniform_location_t {
+				explicit operator int() {
+					int out = 0;
+					glGetUniformiv(program, location, &out);
+					return out;
+				}
+				int operator=(int x) {
+					glProgramUniform1i(program, location, x);
+				}
+			};
+			//TODO: more specializations
+			static constexpr GLuint INVALID_SHADER_ID = 0;
 
 			static GLuint load_shader(const char* code, GLenum which_shader) {
 				if (code == nullptr) {
@@ -75,11 +98,12 @@ namespace foton {
 					glDeleteProgram(id);
 				}
 			}
-			uniform_t get_uniform(const char* name) {
+			template<class T>
+			uniform_t<T> get_uniform(const char* name) {
 				GLint uniform_location = glGetAttribLocation(id, name);
 				if (uniform_location == GL_INVALID_OPERATION)
 					throw shader_error_t("unable to get uniform location");
-				return uniform_t{ id, uniform_location };
+				return uniform_t<T>{ id, uniform_location };
 			}
 			static shader_t load_shader_from_known_paths(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) {
 				auto load_file = [](const filesystem::path& filename) {

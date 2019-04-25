@@ -1,9 +1,9 @@
-#version 330
+#version 400
 
 
-layout(location = 0) out vec4 out_color;
+out vec4 frag_color;
 
 void main()
 {
-    out_color = vec4(.5, .5, .5, .5);
+    frag_color = vec4(.5, .5, .5, .5);
 }

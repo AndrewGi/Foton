@@ -4,17 +4,17 @@
 #include "drawer.hpp"
 namespace foton {
 	namespace gfx_2D { //TODO: Better name
-		using vec2d = Eigen::Vector2d;
+		using vec2f = Eigen::Vector2f;
 		namespace shapes {
 			struct shape_t {
-				vec2d position;
+				vec2f position;
 				double rotation;
 			};
 			struct square_t : shape_t {
 				double raduis;
 			};
 			struct rectangle_t : shape_t {
-				vec2d dimensions;
+				vec2f dimensions;
 			};
 			struct circle_t : shape_t {
 				double radius;

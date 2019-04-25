@@ -13,31 +13,31 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="GL">
-      <UniqueIdentifier>{7167314d-b8a9-4e91-ab92-75970afbc8e8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\shaders">
       <UniqueIdentifier>{112a976a-bbef-4724-8ae3-7a0139178b17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\foton">
+      <UniqueIdentifier>{3c49f6f3-1ec1-46b9-b21e-396a10ab33ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\foton\gl">
+      <UniqueIdentifier>{0baba027-388e-4492-90e5-f659a3178c34}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="window.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\drawer.hpp">
+      <Filter>Header Files\foton</Filter>
     </ClInclude>
-    <ClInclude Include="2D.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\window.hpp">
+      <Filter>Header Files\foton</Filter>
     </ClInclude>
-    <ClInclude Include="drawer.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\gl\gl_objects.hpp">
+      <Filter>Header Files\foton\gl</Filter>
     </ClInclude>
-    <ClInclude Include="gl_buffer.hpp">
-      <Filter>GL</Filter>
-    </ClInclude>
-    <ClInclude Include="shader.hpp">
-      <Filter>GL</Filter>
+    <ClInclude Include="include\shader.hpp">
+      <Filter>Header Files\foton\gl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

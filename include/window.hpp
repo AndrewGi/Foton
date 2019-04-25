@@ -1,12 +1,27 @@
-#pragma 
+#pragma once
 #include <mutex>
 #include <functional>
 #include <vector>
+#include <iostream>
 #include <algorithm>
 #include "drawer.hpp"
-#include "GL/glew.h"
+#include "glew/glew.h"
 #include "GLFW/glfw3.h"
 namespace foton {
+	static void init_glfw() {
+		auto err = glfwInit();
+		if (err != GL_TRUE) {
+			std::cerr << "initalization error: glfw returned " << err << '\n';
+			return;
+		}
+	}
+	static void init_glew() {
+		auto err = glewInit();
+		if (err != GLEW_OK) {
+			std::cerr << "initalization error: glew returned " << glewGetErrorString(err) << '\n';
+			return;
+		}
+	}
 	class window_t {
 		struct glfw_context_lock_t {
 			static std::mutex _gl_lock;
@@ -19,16 +34,18 @@ namespace foton {
 			return glfw_context_lock_t(_glfw_window);
 		}
 	public:
-		
 		window_t(const char* title, int width, int height) {
 			static std::once_flag glfw_init_flag; //will only call glfwInit once during the duration of the program
-			std::call_once(glfw_init_flag, glfwInit); //this line does nothing if glfw_init_flag was called
+			static std::once_flag glew_init_flag; //will only call glfwInit once during the duration of the program
+			std::call_once(glfw_init_flag, init_glfw); //this line does nothing if glfw_init_flag was called
 			_glfw_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 			if (!_glfw_window) { //couldn't create a window for some reason
 				glfwTerminate();
 				throw std::logic_error("couldn't create glfw window");
 			}
 			glfwSetWindowUserPointer(_glfw_window, this); //set the user pointer to 'this' so we can access 'this' inside callbacks
+			auto cl = aquire_glfw_lock();
+			std::call_once(glew_init_flag, init_glew);
 		}
 		window_t(const window_t&) = delete;
 		window_t(window_t&& other) {
@@ -80,7 +97,7 @@ namespace foton {
 			auto cl = aquire_glfw_lock();
 			glClearColor(r, g, b, 1.0f);
 		}
-		void add_drawer(const drawer_t* drawer_p) {
+		void add_drawer(drawer_t* drawer_p) {
 			auto cl = aquire_glfw_lock(); //Don't want to add anything while we drawing
 			_drawers.push_back(drawer_p);
 		}
@@ -111,7 +128,7 @@ namespace foton {
 			}
 		}
 
-		std::vector<const drawer_t*> _drawers; //maybe shouldn't use raw pointer?
+		std::vector<drawer_t*> _drawers = {}; //maybe shouldn't use raw pointer?
 		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;
 		std::function<void(window_t&)> _on_focus_cb;
