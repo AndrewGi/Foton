@@ -21,7 +21,19 @@ namespace foton {
 			//TODO: all the other glUniform functions
 			//TODO: update on reload
 			const GLuint& program;
-			const GLint location;
+			const GLint& location = _location;
+			const char* name;
+			uniform_location_t(const GLuint& program, const char* name) : program(program), name(name), _location(0) {
+				update_location();
+			}
+			void update_location() {
+				_location = glGetUniformLocation(program, name);
+
+				if (_location == -1)
+					throw shader_error_t("unable to get uniform location");
+			}
+		private:
+			GLint _location;
 		};
 		template<class T>
 		struct uniform_t {
@@ -29,6 +41,7 @@ namespace foton {
 		};
 		template<>
 		struct uniform_t<float> : uniform_location_t {
+			uniform_t(const GLuint& program, const char* name) : uniform_location_t(program, name){}
 			explicit operator float() {
 				float out = 0.f;
 				glGetUniformfv(program, location, &out);
@@ -42,6 +55,7 @@ namespace foton {
 		};
 		template<>
 		struct uniform_t<int> : uniform_location_t {
+			uniform_t(const GLuint& program, const char* name) : uniform_location_t(program, name) {}
 			explicit operator int() {
 				int out = 0;
 				glGetUniformiv(program, location, &out);
@@ -149,10 +163,7 @@ namespace foton {
 			}
 			template<class T>
 			uniform_t<T> get_uniform(const char* name) {
-				GLint uniform_location = glGetUniformLocation(id, name);
-				if (uniform_location == -1)
-					throw shader_error_t("unable to get uniform location");
-				return uniform_t<T>{ id, uniform_location };
+				return uniform_t<T>( id, name);
 			}
 			shader_bind_t use() {
 				return shader_bind_t(id);

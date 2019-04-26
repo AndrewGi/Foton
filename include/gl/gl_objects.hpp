@@ -224,7 +224,7 @@ namespace foton {
 				bind.upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
 				amount = count;
 			}
-			vbo_t(GLenum mode) : vbo_location_t(mode) {
+			vbo_t(GLenum mode, bool include_in_draw = false) : vbo_location_t(mode, include_in_draw) {
 			}
 			vbo_t(const T* data, GLsizei count, GLenum usage, GLenum mode) : vbo_t(mode) {
 				upload(data, count, usage);
