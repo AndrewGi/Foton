@@ -179,17 +179,17 @@ namespace foton {
 				_target_mutex = buffer_locks::get_mutex(target);
 				_target = target;
 			}
-			buffer_bind_t bind_buffer() {
+			buffer_bind_t bind() {
 				return buffer_bind_t(_buffer_id, _target, *_target_mutex, _size);
 			}
-			buffer_bind_t bind_buffer(GLenum target) {
+			buffer_bind_t bind(GLenum target) {
 				set_target(target);
-				return bind_buffer();
+				return bind();
 			}
 			template<class T>
-			void upload_Ts(const T* data, size_t count, GLenum usage = GL_STATIC_DRAW) {
-				auto bind = bind_buffer();
-				bind.upload_data(reinterpret_cast<const byte_t*>(data), sizeof(T)*count, usage);
+			void upload_objects(const T* data, size_t count, GLenum usage = GL_STATIC_DRAW) {
+				auto b = bind();
+				b.upload_data(reinterpret_cast<const byte_t*>(data), sizeof(T)*count, usage);
 			}
 			const GLint size() const {
 				return _size;
@@ -200,49 +200,48 @@ namespace foton {
 			GLenum _target = 0;
 			mutex* _target_mutex = nullptr;
 		};
-		struct vbo_location_t : drawer_t {
-			const GLenum mode;
-			buffer_t buffer;
-			GLsizei amount;
-			bool yes_draw_arrays;
-			vbo_location_t(GLenum mode, bool included_in_draw = false) : mode(mode), buffer(), amount(0), yes_draw_arrays(included_in_draw) {
-
-			}
-			void draw() override {
-				if (yes_draw_arrays) {
-					auto bind = buffer.bind_buffer();
-					glDrawArrays(mode, 0, amount);
-				}
-			}
-		};
 		template<class T>
-		struct vbo_t : vbo_location_t {
+		struct vbo_t : buffer_t {
+			static constexpr GLsizei amount_per_element() {
+				return std::get<1>(_c_to_gl_type<T>());
+			}
+			static constexpr GLenum gl_type() {
+				return std::get<0>(_c_to_gl_type<T>());
+			}
 			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
-				auto bind = buffer.bind_buffer();
-				glEnableClientState(GL_VERTEX_ARRAY); //TODO: move this to vao?
-				glVertexPointer(count, std::get<0>(_c_to_gl_type<T>()), 0, 0);
-				bind.upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
-				amount = count;
+				bind().upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
 			}
-			vbo_t(GLenum mode, bool include_in_draw = false) : vbo_location_t(mode, include_in_draw) {
+			vbo_t() : buffer_t(GL_ARRAY_BUFFER) {
 			}
-			vbo_t(const T* data, GLsizei count, GLenum usage, GLenum mode) : vbo_t(mode) {
+			vbo_t(const T* data, GLsizei count, GLenum usage) : vbo_t() {
 				upload(data, count, usage);
 			}
-			vbo_t(std::initializer_list<T> list, GLenum mode, bool include_in_draw = true, GLenum usage = GL_STATIC_DRAW) : vbo_t(mode, include_in_draw) {
+			vbo_t(std::initializer_list<T> list, GLenum usage = GL_STATIC_DRAW) : vbo_t() {
 				std::vector<T> buffer(list);
 				upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
-		};
-		struct vao_t : drawer_t{
 			
+		};
+		static_assert(sizeof(buffer_t) == sizeof(vbo_t<float>));
+		struct vao_t : drawer_t{
+			struct vertex_attribute_location_t {
+				GLuint index;
+				GLuint stride;
+			};
+			struct vertex_attribute_storage_location_t : buffer_t, vertex_attribute_location_t {
+
+			};
+			template<class T>
+			struct vertex_attribute_t : vbo_t<T>, vertex_attribute_location_t {
+			
+			};
 			struct vao_bind_t{
 				static mutex _vao_bind_lock;
-				vao_bind_t(GLuint id, std::vector<vbo_location_t>& vbos) : _id(id), _lock(_vao_bind_lock), _vbos(vbos) {
+				vao_bind_t(GLuint id, std::vector<vertex_attribute_storage_location_t>& vbos) : _id(id), _lock(_vao_bind_lock), _vao_buffers(vbos) {
 					glBindVertexArray(id);
 				}
 				vao_bind_t(const vao_bind_t&) = delete;
-				vao_bind_t(vao_bind_t&& other) : _id(other._id), _lock(std::move(other._lock)), _vbos(other._vbos) {
+				vao_bind_t(vao_bind_t&& other) : _id(other._id), _lock(std::move(other._lock)), _vao_buffers(other._vao_buffers) {
 					other._id = 0;
 				}
 				~vao_bind_t(){
@@ -251,44 +250,45 @@ namespace foton {
 				operator GLuint() const {
 					return _id;
 				}
-				void assign_vertex_attribute(buffer_t& buf, GLuint index, GLint amount_per_component, GLenum type, GLsizei stride) {
-					auto bind = buf.bind_buffer();
-					glEnableVertexAttribArray(index);
-					glVertexAttribPointer(index, amount_per_component, type, GL_FALSE, stride, 0);
+				template<class T>
+				void assign_vertex_attribute(vertex_attribute_t<T>& va) {
+					auto bind = va.bind();
+					glEnableVertexAttribArray(va.index);
+					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, 0);
 				}
-
+				
 				template<class T, class... Args>
-				vbo_t<T>& emplace_vbo(GLuint index, GLsizei stride, Args&&... args) {
+				vertex_attribute_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, Args&&... args) {
 					{
-
-						vbo_t<T> vbo = vbo_t<T>(std::forward<Args>(args)...);
-						static_assert(sizeof(vbo_location_t) == sizeof(vbo_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
-						vbo_location_t& location = *reinterpret_cast<vbo_location_t*>(&vbo);
-						_vbos.emplace_back(std::move(location));
+						vertex_attribute_t<T> va = { {vbo_t<T>(std::forward<Args>(args)...)}, {index, stride } };
+						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(vertex_attribute_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
+						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
+						_vao_buffers.emplace_back(std::move(location));
 
 					} //vbo is no longer valid
-					vbo_t<T>& vbo = *reinterpret_cast<vbo_t<T>*>(&*(_vbos.end() - 1));
-					auto gl_type_info = _c_to_gl_type<T>();
-					assign_vertex_attribute(vbo.buffer, index, static_cast<GLint>(std::get<1>(gl_type_info)), std::get<0>(gl_type_info), stride);
+					vertex_attribute_t<T>& va = *reinterpret_cast<vertex_attribute_t<T>*>(&*(_vao_buffers.end() - 1));
+					assign_vertex_attribute(va);
 
-					return vbo;
+					return va;
 				}
-				std::vector<vbo_location_t>& _vbos;
+				std::vector<vertex_attribute_storage_location_t>& _vao_buffers;
 				GLuint _id;
 				lock _lock;
 			};
+
+			vao_bind_t bind() {
+				return vao_bind_t(_id, _buffers);
+			}
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
-			vao_bind_t bind() {
-				return vao_bind_t(_id, _vbos);
-			}
 			void draw() override {
 				auto b = bind();
-				_vbos[0].draw();
+				
+				//glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 		private:
-			std::vector<vbo_location_t> _vbos;
+			std::vector<vertex_attribute_storage_location_t> _buffers;
 			GLuint _id;
 		};
 	}

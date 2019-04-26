@@ -13,6 +13,7 @@ using vec2f = foton::gfx_2D::vec2f;
 using vec3f = Eigen::Vector3f;
 
 static_assert(sizeof(vec2f) == 2 * sizeof(float));
+static_assert(sizeof(vec3f) == 3 * sizeof(float));
 
 
 int main()
@@ -24,7 +25,7 @@ int main()
 	auto& shader = shader_with_paths.shader();
 	shader::uniform_t<float> time_uniform = shader.get_uniform<float>("time");
 	foton::GL::vao_t vao;
-	vao.bind().emplace_vbo<vec3f>(0, 0, std::initializer_list<vec3f>{ {-.75,-.75, 0 }, {0, .75, 0}, {.75, -.75, .75} }, static_cast<GLenum>(GL_TRIANGLES), true);
+	vao.bind().emplace_vertex_attribute<vec3f>(0, 0, std::initializer_list<vec3f>{ {-.75,-.75, 0 }, {0, .75, 0}, {.75, -.75, .75} });
 	auto wrapper_vao = shader.wrap(vao);
 	main_window.add_drawer(&wrapper_vao);
 	auto current_time = std::chrono::high_resolution_clock::now;
