@@ -204,12 +204,15 @@ namespace foton {
 			const GLenum mode;
 			buffer_t buffer;
 			GLsizei amount;
-			vbo_location_t(GLenum mode) : mode(mode), buffer(), amount(0) {
+			bool yes_draw_arrays;
+			vbo_location_t(GLenum mode, bool included_in_draw = false) : mode(mode), buffer(), amount(0), yes_draw_arrays(included_in_draw) {
 
 			}
 			void draw() override {
-				auto bind = buffer.bind_buffer();
-				glDrawArrays(mode, 0, amount);
+				if (yes_draw_arrays) {
+					auto bind = buffer.bind_buffer();
+					glDrawArrays(mode, 0, amount);
+				}
 			}
 		};
 		template<class T>
@@ -226,7 +229,7 @@ namespace foton {
 			vbo_t(const T* data, GLsizei count, GLenum usage, GLenum mode) : vbo_t(mode) {
 				upload(data, count, usage);
 			}
-			vbo_t(std::initializer_list<T> list, GLenum mode, GLenum usage = GL_STATIC_DRAW) : vbo_t(mode) {
+			vbo_t(std::initializer_list<T> list, GLenum mode, bool include_in_draw = true, GLenum usage = GL_STATIC_DRAW) : vbo_t(mode, include_in_draw) {
 				std::vector<T> buffer(list);
 				upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
@@ -258,7 +261,7 @@ namespace foton {
 				vbo_t<T>& emplace_vbo(GLuint index, GLsizei stride, Args&&... args) {
 					{
 
-						vbo_t<T> vbo = vbo_t<T>(std::move(args)...);
+						vbo_t<T> vbo = vbo_t<T>(std::forward<Args>(args)...);
 						static_assert(sizeof(vbo_location_t) == sizeof(vbo_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
 						vbo_location_t& location = *reinterpret_cast<vbo_location_t*>(&vbo);
 						_vbos.emplace_back(std::move(location));
