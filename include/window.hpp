@@ -134,15 +134,18 @@ namespace foton {
 		static void _glfw_on_focus_cb(GLFWwindow* glfw_window, int state) {
 			window_t& window = *static_cast<window_t*>(glfwGetWindowUserPointer(glfw_window));
 			if (state == GL_TRUE) { //focus gained
-				window._on_focus_cb(window);
+				if(window._on_focus_cb)
+					window._on_focus_cb(window);
 			}
 			else if (state == GL_FALSE) { //focus lost
-				window._on_loss_focus_cb(window);
+				if(window._on_loss_focus_cb)
+					window._on_loss_focus_cb(window);
 			}
 		}
 		static void _glfw_on_key_cb(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
 			window_t& window = *static_cast<window_t*>(glfwGetWindowUserPointer(glfw_window));
-			window._on_key_cb(window, key, action, mods);
+			if(window._glfw_on_key_cb)
+				window._on_key_cb(window, key, action, mods);
 		}
 		std::vector<drawer_t*> _drawers = {}; //maybe shouldn't use raw pointer?
 		//TODO: should_close callback
