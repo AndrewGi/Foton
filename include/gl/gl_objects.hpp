@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include "../drawer.hpp"
 #include "glew/glew.h"
-#include "3D.hpp"
 #include <vector>
 namespace foton {
 	namespace GL {
@@ -19,14 +18,14 @@ namespace foton {
 			} 
 		}
 		template<class T>
-		static constexpr std::pair<GLenum, size_t> _c_to_gl_type() {
+		static constexpr std::pair<GLenum, GLint> _c_to_gl_type() {
 			if constexpr (std::is_same_v<T, GLfloat>) {
 				return { GL_FLOAT, 1 };
 			}
 			else if constexpr (std::is_same_v<T, GLint>) {
 				return { GL_INT, 1 };
 			} 
-			else if constexpr (std::is_same_v<T, gfx_3D::vec3f>) {
+			else if constexpr (std::is_same_v<T, Eigen::Vector3f>) {
 				return { GL_FLOAT, 3 };
 			}
 			else if constexpr (std::is_same_v<T, Eigen::Vector2f>) {
@@ -130,9 +129,6 @@ namespace foton {
 						glBindBuffer(target, 0); //unbind itself
 					}
 				}
-				operator GLuint() const {
-					return target;
-				}
 				void upload_data(const byte_t* data, size_t size_in_bytes, GLenum usage = GL_STATIC_DRAW) {
 					glBufferData(target, size_in_bytes, data, usage);
 					parent_size = static_cast<GLsizei>(size_in_bytes);
@@ -202,7 +198,7 @@ namespace foton {
 		};
 		template<class T>
 		struct vbo_t : buffer_t {
-			static constexpr GLsizei amount_per_element() {
+			static constexpr auto amount_per_element() {
 				return std::get<1>(_c_to_gl_type<T>());
 			}
 			static constexpr GLenum gl_type() {
@@ -225,6 +221,7 @@ namespace foton {
 		static_assert(sizeof(buffer_t) == sizeof(vbo_t<float>));
 		struct vao_t : drawer_t{
 			struct vertex_attribute_location_t {
+				GLuint offset;
 				GLuint index;
 				GLuint stride;
 			};
@@ -235,7 +232,7 @@ namespace foton {
 			struct vertex_attribute_t : vbo_t<T>, vertex_attribute_location_t {
 			
 			};
-			struct vao_bind_t{
+			struct vao_bind_t {
 				static mutex _vao_bind_lock;
 				vao_bind_t(GLuint id, std::vector<vertex_attribute_storage_location_t>& vbos) : _id(id), _lock(_vao_bind_lock), _vao_buffers(vbos) {
 					glBindVertexArray(id);
@@ -244,7 +241,7 @@ namespace foton {
 				vao_bind_t(vao_bind_t&& other) : _id(other._id), _lock(std::move(other._lock)), _vao_buffers(other._vao_buffers) {
 					other._id = 0;
 				}
-				~vao_bind_t(){
+				~vao_bind_t() {
 					glBindVertexArray(0); //Unbind itself (maybe not needed)
 				}
 				operator GLuint() const {
@@ -253,14 +250,15 @@ namespace foton {
 				template<class T>
 				void assign_vertex_attribute(vertex_attribute_t<T>& va) {
 					auto bind = va.bind();
+					uint64_t offset = va.offset;
+					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
 					glEnableVertexAttribArray(va.index);
-					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, 0);
 				}
-				
+
 				template<class T, class... Args>
-				vertex_attribute_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, Args&&... args) {
+				vertex_attribute_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, GLuint offset, Args&&... vbo_args) {
 					{
-						vertex_attribute_t<T> va = { {vbo_t<T>(std::forward<Args>(args)...)}, {index, stride } };
+						vertex_attribute_t<T> va = { {vbo_t<T>(std::forward<Args>(vbo_args)...)}, {index, stride, offset } };
 						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(vertex_attribute_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
 						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
 						_vao_buffers.emplace_back(std::move(location));
@@ -268,7 +266,6 @@ namespace foton {
 					} //vbo is no longer valid
 					vertex_attribute_t<T>& va = *reinterpret_cast<vertex_attribute_t<T>*>(&*(_vao_buffers.end() - 1));
 					assign_vertex_attribute(va);
-
 					return va;
 				}
 				std::vector<vertex_attribute_storage_location_t>& _vao_buffers;
@@ -285,7 +282,7 @@ namespace foton {
 			void draw() override {
 				auto b = bind();
 				
-				//glDrawArrays(GL_TRIANGLES, 0, 3);
+				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 		private:
 			std::vector<vertex_attribute_storage_location_t> _buffers;
