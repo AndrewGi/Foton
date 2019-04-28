@@ -25,6 +25,12 @@
     <Filter Include="Resource Files\models">
       <UniqueIdentifier>{cc4290af-70ca-4bde-bea6-e8bc7b09276e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\soundio">
+      <UniqueIdentifier>{e86449a5-f3fa-4d9d-82fa-b7c393329352}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\foton\audio">
+      <UniqueIdentifier>{e900104e-d93f-4cf8-b799-063f21567681}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -50,6 +56,18 @@
     </ClInclude>
     <ClInclude Include="include\gl\shader.hpp">
       <Filter>Header Files\foton\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="include\soundio\endian.h">
+      <Filter>Header Files\soundio</Filter>
+    </ClInclude>
+    <ClInclude Include="include\soundio\soundio.h">
+      <Filter>Header Files\soundio</Filter>
+    </ClInclude>
+    <ClInclude Include="include\audio\sound.hpp">
+      <Filter>Header Files\foton\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mutex.hpp">
+      <Filter>Header Files\foton</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

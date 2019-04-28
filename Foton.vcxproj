@@ -180,7 +180,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;glew32s.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>soundio.lib;opengl32.lib;glew32s.lib;glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerboseLib</ShowProgress>
     </Link>
   </ItemDefinitionGroup>
@@ -225,10 +225,14 @@
   <ItemGroup>
     <ClInclude Include="2D.hpp" />
     <ClInclude Include="include\3D.hpp" />
+    <ClInclude Include="include\audio\sound.hpp" />
     <ClInclude Include="include\drawer.hpp" />
     <ClInclude Include="include\gl\gl_objects.hpp" />
     <ClInclude Include="include\gl\shader.hpp" />
     <ClInclude Include="include\model.hpp" />
+    <ClInclude Include="include\mutex.hpp" />
+    <ClInclude Include="include\soundio\endian.h" />
+    <ClInclude Include="include\soundio\soundio.h" />
     <ClInclude Include="include\window.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

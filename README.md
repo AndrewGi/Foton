@@ -1,11 +1,15 @@
 # Foton
 The engine for SoyuzBoys
-So far mostly a C++ wrapper for opengl but more high level functions are planned
--Model loading (OBJ, MTL?, etc)
--Compute?
--Shadows?
--UI?
-(Still planning)
+So far mostly a C++ wrapper for opengl but more high level functions are planned  
+  
+- [x] = Underworks
+- [ ] = Planned  
+Features:  
+- [x] Model loading (OBJ, MTL?, etc)
+- [ ] Compute
+- [ ] Shadows
+- [ ] UI
+- [ ] Audio
 
 Demo triangle:
 

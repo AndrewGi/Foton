@@ -234,11 +234,11 @@ namespace foton {
 			};
 			struct vao_bind_t {
 				static mutex _vao_bind_lock;
-				vao_bind_t(GLuint id, std::vector<vertex_attribute_storage_location_t>& vbos) : _id(id), _lock(_vao_bind_lock), _vao_buffers(vbos) {
+				vao_bind_t(GLuint id, vao_t& parent) : _id(id), _lock(_vao_bind_lock), _parent(parent) {
 					glBindVertexArray(id);
 				}
 				vao_bind_t(const vao_bind_t&) = delete;
-				vao_bind_t(vao_bind_t&& other) : _id(other._id), _lock(std::move(other._lock)), _vao_buffers(other._vao_buffers) {
+				vao_bind_t(vao_bind_t&& other) : _id(other._id), _lock(std::move(other._lock)), _parent(other._parent) {
 					other._id = 0;
 				}
 				~vao_bind_t() {
@@ -250,9 +250,13 @@ namespace foton {
 				template<class T>
 				void assign_vertex_attribute(vertex_attribute_t<T>& va) {
 					auto bind = va.bind();
+					if (va.index == 0 && _parent._vertex_coords == nullptr) {
+						_parent._vertex_coords = reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
+					}
 					uint64_t offset = va.offset;
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
 					glEnableVertexAttribArray(va.index);
+					check_gl_errors("after assigning vertex attribute");
 				}
 
 				template<class T, class... Args>
@@ -261,32 +265,37 @@ namespace foton {
 						vertex_attribute_t<T> va = { {vbo_t<T>(std::forward<Args>(vbo_args)...)}, {index, stride, offset } };
 						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(vertex_attribute_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
 						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
-						_vao_buffers.emplace_back(std::move(location));
+						_parent._buffers.emplace_back(std::move(location));
 
 					} //vbo is no longer valid
-					vertex_attribute_t<T>& va = *reinterpret_cast<vertex_attribute_t<T>*>(&*(_vao_buffers.end() - 1));
+					vertex_attribute_t<T>& va = *reinterpret_cast<vertex_attribute_t<T>*>(&*(_parent._buffers.end() - 1));
 					assign_vertex_attribute(va);
 					return va;
 				}
-				std::vector<vertex_attribute_storage_location_t>& _vao_buffers;
+				vao_t& _parent;
 				GLuint _id;
 				lock _lock;
 			};
 
 			vao_bind_t bind() {
-				return vao_bind_t(_id, _buffers);
+				return vao_bind_t(_id, *this);
 			}
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
 			void draw() override {
-				auto b = bind();
-				
-				glDrawArrays(GL_TRIANGLES, 0, 3);
+				if (_vertex_coords != nullptr) {
+					auto b = bind();
+
+					glDrawArrays(_draw_shapes, 0, _vertex_coords->size()/sizeof(Eigen::Vector3f)); //TODO: /sizeof(float)*3
+				}
 			}
 		private:
 			std::vector<vertex_attribute_storage_location_t> _buffers;
+			vertex_attribute_storage_location_t* _vertex_coords = nullptr; //Too know how many to draw
 			GLuint _id;
+			GLenum _draw_shapes = GL_TRIANGLES;
+			
 		};
 	}
 }
