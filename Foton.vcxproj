@@ -226,6 +226,7 @@
     <ClInclude Include="2D.hpp" />
     <ClInclude Include="include\3D.hpp" />
     <ClInclude Include="include\audio\sound.hpp" />
+    <ClInclude Include="include\audio\soundio_cpp.hpp" />
     <ClInclude Include="include\drawer.hpp" />
     <ClInclude Include="include\gl\gl_objects.hpp" />
     <ClInclude Include="include\gl\shader.hpp" />
