@@ -58,7 +58,7 @@ namespace foton {
 					*/
 					size_t write(const sample_t* samples, size_t amount) {
 						while (amount > 0 && samples_left > 0) {
-							*area->ptr = *samples;
+							*reinterpret_cast<sample_t*>(area->ptr) = *samples;
 							*area->ptr += area->step;
 							samples_left--;
 							amount--;
@@ -108,13 +108,13 @@ namespace foton {
 				size_t sample_rate() const {
 					return stream_io->sample_rate;
 				}
-				size_t samples_per_frame() const {
+				uint32_t samples_per_frame() const {
 					return stream_io->bytes_per_frame / stream_io->bytes_per_sample;
 				}
-				size_t channels_count() const {
+				uint32_t channels_count() const {
 					return stream_io->layout.channel_count;
 				}
-				size_t samples_per_area() const {
+				uint32_t samples_per_area() const {
 					return samples_per_frame() / channels_count();
 				}
 				void* user_data = nullptr;
@@ -172,11 +172,11 @@ namespace foton {
 					int count = soundio_input_device_count(s_io);
 					return static_cast<size_t>(count < 0 ? 0 : count);
 				}
-				device_t get_output_device(size_t index) {
-					return device_t(soundio_get_output_device(s_io, index));
+				device_t get_output_device(uint32_t index) {
+					return device_t(soundio_get_output_device(s_io, static_cast<int>(index)));
 				}
-				device_t get_input_device(size_t index) {
-					return device_t(soundio_get_input_device(s_io, index));
+				device_t get_input_device(uint32_t index) {
+					return device_t(soundio_get_input_device(s_io, static_cast<int>(index)));
 				}
 				void force_device_scan() {
 					soundio_force_device_scan(s_io);

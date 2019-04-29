@@ -6,6 +6,8 @@
 #include "2D.hpp"
 #include "gl/gl_objects.hpp"
 #include "gl/shader.hpp"
+#include "gl/shader.hpp"
+#include "audio/sound.hpp"
 #include <iostream>
 #include <chrono>
 using namespace std::chrono_literals;
@@ -36,6 +38,10 @@ int main()
 	double frame_time = 1; //not 0 because fps = 1/frame_time and if frame_time == 0.0, thats division by zero
 	double last_frame_time_spike = 1;
 	auto last_frame_time_spike_time = last_fps_time; //great variable names 
+	std::cout << "Output devices:\n";
+	for (const auto& device : audio::get_output_devices()) {
+		std::cout << device.name() << '\n';
+	}
 	auto print_fps = [&]() {
 		GLenum err = glGetError();
 		if (err != GL_NO_ERROR) {
