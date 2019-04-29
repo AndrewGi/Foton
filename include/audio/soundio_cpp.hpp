@@ -1,3 +1,4 @@
+#pragma once
 #include "../soundio/soundio.h"
 #include <utility>
 #include <stdexcept>
@@ -36,15 +37,15 @@ namespace foton {
 				device_t& operator=(const device_t& other) {
 					return *this = std::move(device_t(other));
 				}
+				~device_t() {
+					destroy();
+				}
 			private:
 				void destroy() {
 					if (d_io != nullptr) {
 						soundio_device_unref(d_io);
 						d_io = nullptr;
 					}
-				}
-				~device_t() {
-					destroy();
 				}
 			};
 			struct out_stream_t {
