@@ -4,6 +4,12 @@
 namespace foton {
 	namespace audio {
 		soundio::soundio_t sound_io;
+		struct stream_t {
+		};
+		struct out_stream_t : stream_t {
+
+		};
+
 		struct output_device_t : device_t {
 
 		};
