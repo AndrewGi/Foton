@@ -6,9 +6,10 @@
 #include <fstream>
 #include "../drawer.hpp"
 #include "glew/glew.h"
+#include "Eigen/Geometry"
 namespace foton {
 	namespace shader {
-		namespace filesystem = std::experimental::filesystem; //why is this still in experimental?
+		namespace filesystem = std::filesystem; //why is this still in experimental?
 		struct shader_error_t : std::logic_error {
 			shader_error_t(std::string msg) : std::logic_error(msg) {};
 		};
@@ -20,20 +21,41 @@ namespace foton {
 		struct uniform_location_t {
 			//TODO: all the other glUniform functions
 			//TODO: update on reload
-			const GLuint& program;
-			const GLint& location = _location;
-			const char* name;
-			uniform_location_t(const GLuint& program, const char* name) : program(program), name(name), _location(0) {
+			uniform_location_t(const GLuint* program, const char* name) : _program(program), _name(name) {
 				update_location();
 			}
-			void update_location() {
-				_location = glGetUniformLocation(program, name);
+			uniform_location_t() : _name(nullptr), _program(nullptr) {}
+			void update_location(bool throw_on_not_found=false) {
+				if (_program == nullptr || _name == nullptr)
+					return;
+				_location = glGetUniformLocation(program(), name());
 
-				if (_location == -1)
+				if (throw_on_not_found && _location == -1)
 					throw shader_error_t("unable to get uniform location");
 			}
+			void maybe_update() {
+				if (_last_program != program()) {
+					update_location();
+					_last_program = program();
+				}
+			}
+			GLint location() const {
+				return _location;
+			}
+			GLuint program() const {
+				if (_program)
+					return *_program;
+				else
+					return 0;
+			}
+			const char* name() const {
+				return _name;
+			}
 		private:
-			GLint _location;
+			GLint _location = -1;
+			const GLuint* _program;
+			const char* _name;
+			GLuint _last_program = 0;
 		};
 		template<class T>
 		struct uniform_t {
@@ -41,31 +63,71 @@ namespace foton {
 		};
 		template<>
 		struct uniform_t<float> : uniform_location_t {
-			uniform_t(const GLuint& program, const char* name) : uniform_location_t(program, name){}
+			uniform_t(const GLuint* program, const char* name) : uniform_location_t(program, name){}
 			explicit operator float() {
+				if (location() == -1) {
+					return {};
+				}
+				maybe_update();
 				float out = 0.f;
-				glGetUniformfv(program, location, &out);
+				glGetUniformfv(program(), location(), &out);
 				return out;
 			}
 			float operator=(float x) {
-				glProgramUniform1f(program, location, x);
+				if (location() == -1) {
+					return {};
+				}
+				maybe_update();
+				glProgramUniform1f(program(), location(), x);
 				return x;
 			}
 
 		};
 		template<>
 		struct uniform_t<int> : uniform_location_t {
-			uniform_t(const GLuint& program, const char* name) : uniform_location_t(program, name) {}
+			uniform_t(const GLuint* program, const char* name) : uniform_location_t(program, name) {}
 			explicit operator int() {
+				if (location() == -1) {
+					return {};
+				}
+				maybe_update();
 				int out = 0;
-				glGetUniformiv(program, location, &out);
+				glGetUniformiv(program(), location(), &out);
 				return out;
 			}
 			int operator=(int x) {
-				glProgramUniform1i(program, location, x);
+				if (location() == -1) {
+					return {};
+				}
+				maybe_update();
+				glProgramUniform1i(program(), location(), x);
 				return x;
 			}
 		};
+		template<>
+		struct uniform_t<Eigen::Matrix4f> : uniform_location_t {
+			using mat4f = Eigen::Matrix4f;
+			uniform_t() : uniform_location_t() {}
+			uniform_t(const GLuint* program, const char* name) : uniform_location_t(program, name) {}
+			explicit operator mat4f() {
+				if (location() == -1) {
+					return {};
+				}
+				float values[4 * 4];
+				maybe_update();
+				glProgramUniformMatrix4fv(program(), location(), 4, GL_FALSE, values);
+				return mat4f(values);
+			}
+			const mat4f operator=(const mat4f& mat) {
+				if (location() == -1) {
+					return {};
+				}
+				maybe_update();
+				glProgramUniformMatrix4fv(program(), location(), 4, GL_FALSE, mat.data());
+				return mat;
+			}
+		};
+
 		//TODO: more specializations
 		class shader_t {
 		public:
@@ -162,8 +224,15 @@ namespace foton {
 				delete_program();
 			}
 			template<class T>
-			uniform_t<T> get_uniform(const char* name) {
-				return uniform_t<T>( id, name);
+			uniform_t<T> get_uniform(const char* name, bool throw_on_not_found=true) {
+				if (throw_on_not_found)
+					return uniform_t<T>( &id, name);
+				try {
+					return uniform_t<T>(&id, name);
+				}
+				catch (shader_error_t err) {
+					return uniform_t<T>(nullptr, nullptr);
+				}
 			}
 			shader_bind_t use() {
 				return shader_bind_t(id);
@@ -182,7 +251,6 @@ namespace foton {
 			}
 			private:
 				void delete_program() {
-
 					if (id > 0) {
 						auto lock = std::unique_lock<std::mutex>(shader_bind_t::_master_shader_mutex);
 						glDeleteProgram(id);
@@ -245,6 +313,16 @@ namespace foton {
 					geometry_source.empty() ? nullptr : geometry_source.c_str());
 			}
 			shader_t _shader;
+		};
+		struct shader_transform_uniforms_t {
+			using mat4f = Eigen::Matrix4f;
+			uniform_t<mat4f> model_mat;
+			uniform_t<mat4f> view_mat;
+			uniform_t<mat4f> projection_mat;
+			shader_transform_uniforms_t(shader_t& shader) 
+				: model_mat(shader.get_uniform<mat4f>("model_mat", false)), view_mat(shader.get_uniform<mat4f>("view_mat", false)),
+				projection_mat(shader.get_uniform<mat4f>("projection_mat", false)) {}
+			
 		};
 	}
 }

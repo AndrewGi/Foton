@@ -144,8 +144,11 @@ namespace foton {
 					
 			};
 			struct soundio_t {
-				SoundIo* s_io = nullptr;
+				SoundIo* s_io;
 				soundio_t() : s_io(soundio_create()) {
+					if (s_io == nullptr) {
+						throw soundio_error_t(0); //soundio is null
+					}
 				}
 				void flush() {
 					soundio_flush_events(s_io);

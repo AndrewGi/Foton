@@ -19,9 +19,6 @@
     <Filter Include="Header Files\foton">
       <UniqueIdentifier>{3c49f6f3-1ec1-46b9-b21e-396a10ab33ad}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\foton\gl">
-      <UniqueIdentifier>{0baba027-388e-4492-90e5-f659a3178c34}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\models">
       <UniqueIdentifier>{cc4290af-70ca-4bde-bea6-e8bc7b09276e}</UniqueIdentifier>
     </Filter>
@@ -31,31 +28,28 @@
     <Filter Include="Header Files\foton\audio">
       <UniqueIdentifier>{e900104e-d93f-4cf8-b799-063f21567681}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\foton\utility">
+      <UniqueIdentifier>{798df362-9d21-4b30-bbaf-3e42717bde02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\foton\graphics">
+      <UniqueIdentifier>{4b94731a-5682-445b-9e6d-e26dddcaaf1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\foton\graphics\gl">
+      <UniqueIdentifier>{0baba027-388e-4492-90e5-f659a3178c34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\foton\window">
+      <UniqueIdentifier>{7e39013c-4ced-4473-8294-b1fb908b4cff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\drawer.hpp">
-      <Filter>Header Files\foton</Filter>
-    </ClInclude>
-    <ClInclude Include="include\window.hpp">
-      <Filter>Header Files\foton</Filter>
-    </ClInclude>
     <ClInclude Include="include\gl\gl_objects.hpp">
-      <Filter>Header Files\foton\gl</Filter>
-    </ClInclude>
-    <ClInclude Include="include\model.hpp">
-      <Filter>Header Files\foton</Filter>
-    </ClInclude>
-    <ClInclude Include="2D.hpp">
-      <Filter>Header Files\foton</Filter>
-    </ClInclude>
-    <ClInclude Include="include\3D.hpp">
-      <Filter>Header Files\foton</Filter>
+      <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
     <ClInclude Include="include\gl\shader.hpp">
-      <Filter>Header Files\foton\gl</Filter>
+      <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
     <ClInclude Include="include\soundio\endian.h">
       <Filter>Header Files\soundio</Filter>
@@ -71,6 +65,30 @@
     </ClInclude>
     <ClInclude Include="include\audio\soundio_cpp.hpp">
       <Filter>Header Files\foton\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="include\window.hpp">
+      <Filter>Header Files\foton\window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utility\fps_counter.hpp">
+      <Filter>Header Files\foton\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\camera.hpp">
+      <Filter>Header Files\foton\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\drawer.hpp">
+      <Filter>Header Files\foton\window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\object.hpp">
+      <Filter>Header Files\foton</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene.hpp">
+      <Filter>Header Files\foton</Filter>
+    </ClInclude>
+    <ClInclude Include="include\types.hpp">
+      <Filter>Header Files\foton\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\model.hpp">
+      <Filter>Header Files\foton</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

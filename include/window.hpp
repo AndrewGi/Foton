@@ -7,6 +7,8 @@
 #include "drawer.hpp"
 #include "glew/glew.h"
 #include "GLFW/glfw3.h"
+#include "utility/fps_counter.hpp"
+#include "graphics/camera.hpp"
 namespace foton {
 	static void init_glfw() {
 		auto err = glfwInit();
@@ -22,8 +24,8 @@ namespace foton {
 			std::cerr << "initalization error: glew returned " << glewGetErrorString(err) << '\n';
 			return;
 		}
-		std::cout << "renderer : " << glGetString(GL_RENDERER) << '\n';
-		std::cout << "opengl version : " << glGetString(GL_VERSION) << '\n';
+		std::cout << "renderer: " << glGetString(GL_RENDERER) << '\n';
+		std::cout << "opengl version: " << glGetString(GL_VERSION) << '\n';
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
 	}
@@ -39,13 +41,24 @@ namespace foton {
 			return glfw_context_lock_t(_glfw_window);
 		}
 	public:
-		window_t(const char* title, int width, int height) {
+		fps_counter_t fps_counter;
+		window_t(const char* title, int width, int height)  {
 			static std::once_flag glfw_init_flag; //will only call glfwInit once during the duration of the program
 			static std::once_flag glew_init_flag; //will only call glfwInit once during the duration of the program
 			std::call_once(glfw_init_flag, init_glfw); //this line does nothing if glfw_init_flag was called
 			_glfw_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+			camera().projection.width = width;
+			camera().projection.height = height;
 			glfwSetKeyCallback(_glfw_window, _glfw_on_key_cb);
 			glfwSetWindowFocusCallback(_glfw_window, _glfw_on_focus_cb);
+			glfwSetWindowSizeCallback(_glfw_window, [](GLFWwindow* window, int width, int height) {
+				window_t& self = *static_cast<window_t*>(glfwGetWindowUserPointer(window));
+				self.camera().projection.width = width;
+				self.camera().projection.height = height;				
+			});
+			glfwSetWindowRefreshCallback(_glfw_window, [](GLFWwindow* window) {
+				static_cast<window_t*>(glfwGetWindowUserPointer(window))->render();
+			});
 			if (!_glfw_window) { //couldn't create a window for some reason
 				glfwTerminate();
 				throw std::logic_error("couldn't create glfw window");
@@ -53,6 +66,7 @@ namespace foton {
 			glfwSetWindowUserPointer(_glfw_window, this); //set the user pointer to 'this' so we can access 'this' inside callbacks
 			auto cl = aquire_glfw_lock();
 			std::call_once(glew_init_flag, init_glew);
+			camera().set_viewport();
 		}
 		window_t(const window_t&) = delete;
 		window_t(window_t&& other) {
@@ -74,6 +88,8 @@ namespace foton {
 			return { width, height };
 		}
 		void resize(int width, int height) {
+			camera().projection.width = width;
+			camera().projection.height = height;
 			glfwSetWindowSize(_glfw_window, width, height);
 		}
 		void hide() {
@@ -111,24 +127,27 @@ namespace foton {
 		void render() {
 			auto cl = aquire_glfw_lock();
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+			camera().set_viewport();
 			/*
 				For now, just a for each through all the renderable objects
 
 				Later: hoping to have this multithreaded or more advance in some way
 			*/
-			std::for_each(_drawers.cbegin(), _drawers.cend(), [](drawer_t* drawer) {
-				drawer->draw();
+			std::for_each(_drawers.begin(), _drawers.end(), [](drawer_t* drawer) {
+				if (drawer->is_visable)
+					drawer->draw();
 			});
-
 			glfwSwapBuffers(_glfw_window);
-			glfwPollEvents();
+			fps_counter.frame();
 		}
 		using keyboard_key_t = int;
 		using keyboard_action_t = int;
 		using keyboard_mods_t = int;
 		void set_key_callback(std::function<void(window_t&, keyboard_key_t, keyboard_action_t, keyboard_mods_t)> callback) {
 			_on_key_cb = callback;
+		}
+		camera::camera_t& camera() {
+			return _camera;
 		}
 	private:
 		static void _glfw_on_focus_cb(GLFWwindow* glfw_window, int state) {
@@ -148,6 +167,7 @@ namespace foton {
 				window._on_key_cb(window, key, action, mods);
 		}
 		std::vector<drawer_t*> _drawers = {}; //maybe shouldn't use raw pointer?
+		camera::camera_t _camera;
 		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;
 		std::function<void(window_t&)> _on_focus_cb;

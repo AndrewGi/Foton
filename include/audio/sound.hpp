@@ -4,7 +4,11 @@
 namespace foton {
 	namespace audio {
 		using sample_t = soundio::sample_t;
-		soundio::soundio_t sound_io;
+		std::unique_ptr<soundio::soundio_t> sound_io = nullptr;
+		void initalize() {
+			sound_io = std::make_unique<soundio::soundio_t>();
+			sound_io->connect();
+		}
 		struct stream_t {
 		};
 		struct out_stream_t : stream_t {
@@ -69,21 +73,21 @@ namespace foton {
 		};
 		std::vector<output_device_t> get_output_devices() {
 			std::vector<output_device_t> devices;
-			sound_io.force_device_scan();
-			const size_t num_of_devices = sound_io.output_count();
+			sound_io->force_device_scan();
+			const size_t num_of_devices = sound_io->output_count();
 			devices.reserve(num_of_devices);
 			for (uint32_t i = 0; i < num_of_devices; i++) {
-				devices.emplace_back(sound_io.get_output_device(i));
+				devices.emplace_back(sound_io->get_output_device(i));
 			}
 			return devices;
 		}
 		std::vector<input_device_t> get_input_devices() {
 			std::vector<input_device_t> devices;
-			sound_io.force_device_scan();
-			const size_t num_of_devices = sound_io.input_count();
+			sound_io->force_device_scan();
+			const size_t num_of_devices = sound_io->input_count();
 			devices.reserve(num_of_devices);
 			for (uint32_t i = 0; i < num_of_devices; i++) {
-				devices.emplace_back(sound_io.get_input_device(i));
+				devices.emplace_back(sound_io->get_input_device(i));
 			}
 			return devices;
 		}
