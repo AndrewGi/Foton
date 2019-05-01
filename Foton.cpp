@@ -2,12 +2,14 @@
 //
 
 #include "pch.h"
-#include "window.hpp"
+#include "windows/window.hpp"
 #include "2D.hpp"
-#include "gl/gl_objects.hpp"
-#include "gl/shader.hpp"
+#include "graphics/gl/gl_objects.hpp"
+#include "graphics/gl/shader.hpp"
 #include "model.hpp"
 #include "audio/sound.hpp"
+#define FOTON_MP3_SUPPORT
+#include "audio/mp3.hpp"
 #include "utility/fps_counter.hpp"
 #include <iostream>
 #include <chrono>

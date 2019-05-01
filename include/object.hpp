@@ -8,14 +8,17 @@ namespace foton {
 		std::vector<model::model_t> models;
 		std::vector<drawer_t*> _drawers;
 		vec3f position;
-
+		quatf rotation;
 		void draw() override {
 			for (drawer_t* drawer : _drawers) {
 				drawer->draw();
 			}
 		}
 		mat4f model_mat() {
-			return mat4f(position.x, position.y, position.z);
+			aff3f out;
+			out.translate(position);
+			out.rotate(rotation);
+			return out.matrix;
 		}
 	};
 }

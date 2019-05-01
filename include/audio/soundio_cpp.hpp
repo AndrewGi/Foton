@@ -84,6 +84,9 @@ namespace foton {
 				~out_stream_t() {
 					destroy();
 				}
+				size_t buffer_size_hint() {
+					
+				}
 				void open() {
 					err_check(soundio_outstream_open(stream_io));
 				}
@@ -119,14 +122,14 @@ namespace foton {
 				}
 				void* user_data = nullptr;
 				void(*user_write_callback)(out_stream_t& stream, write_area_t& area);
+				size_t(*user_size_hint_callback)(out_stream_t& stream, size_t max_samples);
 			private:
-				uint32_t _frames_per_callback = 1;
 				static void _write_callback(SoundIoOutStream* out_stream, int frame_count_min, int frame_count_max) {
 					out_stream_t& self = *static_cast<out_stream_t*>(out_stream->userdata);
 					if (self.user_write_callback == nullptr)
 						return;
 					SoundIoChannelArea* areas;
-					int frame_count = self._frames_per_callback;
+					int frame_count = static_cast<int>(self.user_size_hint_callback(self, static_cast<size_t>(frame_count_max)));
 					soundio_outstream_begin_write(out_stream, &areas, &frame_count);
 					for (int i = 0; i < frame_count; i++) {
 						write_area_t area { static_cast<uint32_t>(i), self.samples_per_frame(), &areas[i] };

@@ -10,10 +10,11 @@ namespace foton {
 			sound_io->connect();
 		}
 		struct stream_t {
+			void* user_ptr = nullptr;
 		};
 		struct out_stream_t : stream_t {
 			soundio::out_stream_t stream;
-			out_stream_t(soundio::out_stream_t soundio_stream) : stream(std::move(soundio_stream)) {};
+			out_stream_t(soundio::out_stream_t soundio_stream, void* user_ptr = nullptr) : stream(std::move(soundio_stream)), stream_t{ user_ptr } {};
 		};
 		struct in_stream_t : stream_t {
 			in_stream_t() = delete; // not implemented
@@ -71,6 +72,42 @@ namespace foton {
 			size_t _sample_count = 0;
 			out_stream_t _out;
 		};
+		struct sample_generator_t {
+			virtual size_t size_hint(size_t max_samples) = 0;
+			virtual void generate_samples(sample_t* samples, size_t amount, size_t channel_num) = 0;
+		};
+		struct player_t {
+			out_stream_t stream;
+			std::unique_ptr<sample_generator_t> generator;
+			size_t buffer_size = 0;
+			std::unique_ptr<sample_t[]> buffer = nullptr;
+			void grow_to(size_t size) {
+				if (buffer_size < size) {
+					buffer_size = size;
+					buffer.reset(new sample_t[size]);
+				}
+			}
+			player_t(out_stream_t stream, std::unique_ptr<sample_generator_t> generator) :
+				stream(std::move(stream)), generator(std::move(generator)) {
+				stream.stream.user_data = nullptr;
+				stream.stream.user_size_hint_callback = _stream_size_hint;
+				stream.stream.user_write_callback = _stream_generator;
+			}
+			static void _stream_generator(soundio::out_stream_t& stream, soundio::out_stream_t::write_area_t& write_area) {
+				player_t& player = *static_cast<player_t*>(stream.user_data);
+				player.generator->generate_samples(player.buffer.get(), write_area.samples_left, write_area.channel_index);
+			}
+			static size_t _stream_size_hint(soundio::out_stream_t& stream, size_t max_samples) {
+				player_t& player = *static_cast<player_t*>(stream.user_data);
+				size_t size = player.generator->size_hint(max_samples);
+				player.grow_to(size);
+				return player.generator->size_hint(max_samples);
+			}
+		};
+		template<class GeneratorT, class... Args>
+		static player_t make_player(out_stream_t stream, Args&&... args) {
+			return { std::move(stream), std::make_unique<GeneratorT>(std::forward<Args>(args)...) };
+		}
 		std::vector<output_device_t> get_output_devices() {
 			std::vector<output_device_t> devices;
 			sound_io->force_device_scan();

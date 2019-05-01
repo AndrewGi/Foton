@@ -2,7 +2,7 @@
 #include "Eigen/Geometry"
 namespace foton {
 	using vec3f = Eigen::Vector3f;
-	using vec2f = Eigen::Vector3f;
+	using vec2f = Eigen::Vector2f;
 
 	using quatf = Eigen::Quaternionf;
 	using aff3f = Eigen::Affine3f;

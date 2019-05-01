@@ -90,6 +90,9 @@
     <ClInclude Include="include\model.hpp">
       <Filter>Header Files\foton</Filter>
     </ClInclude>
+    <ClInclude Include="include\audio\mp3.hpp">
+      <Filter>Header Files\foton\audio</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

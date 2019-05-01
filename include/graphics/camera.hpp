@@ -1,7 +1,7 @@
 #pragma once
 #include "../glew/glew.h"
-#include "../gl/shader.hpp"
-#include "types.hpp"
+#include "gl/shader.hpp"
+#include "../types.hpp"
 namespace foton {
 	namespace camera {
 		struct projection_t {
@@ -45,9 +45,9 @@ namespace foton {
 		struct camera_t {
 			view_t view;
 			projection_t projection;
-			mat4f view_matrix;
-			mat4f projection_matrix;
-			void recalculate() {
+			mutable mat4f view_matrix;
+			mutable mat4f projection_matrix;
+			void recalculate() const {
 				view_matrix = view.as_mat();
 				projection_matrix = projection.as_mat();
 			}
