@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28822.285
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Foton", "Foton.vcxproj", "{691C328E-3DD6-4131-9BA0-2F68A0F5B489}"
 EndProject
@@ -15,8 +15,8 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.Debug|x64.ActiveCfg = DebugWindows10|x64
-		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.Debug|x64.Build.0 = DebugWindows10|x64
+		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.Debug|x64.ActiveCfg = Debug|x64
+		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.Debug|x64.Build.0 = Debug|x64
 		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.Debug|x86.ActiveCfg = Debug|Win32
 		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.Debug|x86.Build.0 = Debug|Win32
 		{691C328E-3DD6-4131-9BA0-2F68A0F5B489}.DebugWindows10|x64.ActiveCfg = DebugWindows10|x64

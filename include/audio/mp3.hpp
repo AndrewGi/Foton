@@ -2,7 +2,7 @@
 #ifdef FOTON_MP3_SUPPORT
 #include "sound.hpp"
 #include "../libmpg123/mpg123.h"
-#pragma comment(lib, "resources/libmpg123.lib")
+#pragma comment(lib, "libs/x64/libmpg123.lib")
 #include <filesystem>
 namespace foton {
 	namespace audio {
