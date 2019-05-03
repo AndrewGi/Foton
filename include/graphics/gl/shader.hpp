@@ -4,7 +4,7 @@
 #include <shared_mutex>
 #include <filesystem>
 #include <fstream>
-#include "../windows/drawer.hpp"
+#include "../drawer.hpp"
 #include "glew/glew.h"
 #include "Eigen/Geometry"
 namespace foton {
@@ -54,7 +54,7 @@ namespace foton {
 		private:
 			GLint _location = -1;
 			const GLuint* _program;
-			const char* _name;
+			const char* _name = nullptr;
 			GLuint _last_program = 0;
 		};
 		template<class T>
@@ -137,19 +137,36 @@ namespace foton {
 
 			struct shader_bind_t {
 				const GLuint program = 0;
-				shader_bind_t(GLuint program) : program(program), lock(_master_shader_mutex) {
+				shader_bind_t(GLuint program) : program(program), lock(aquire_lock()) {
 					glUseProgram(program);
 				}
 				shader_bind_t(const shader_bind_t&) = delete;
 				shader_bind_t(shader_bind_t&& other) : program(other.program), lock(std::move(other.lock)) {
-
+					if (lock.owns_lock()) {
+						_thread_lock_id = hash(std::this_thread::get_id());
+					}
 				}
 				~shader_bind_t() {
-					if (lock.owns_lock())
+					if (lock.owns_lock()) {
 						glUseProgram(0);
+						_thread_lock_id = 0;
+					}
+				}
+				static std::unique_lock<std::mutex> aquire_lock() {
+					size_t this_id = hash(std::this_thread::get_id());
+					if (_thread_lock_id == this_id) {
+						throw std::runtime_error("shader already being used in current thread");
+					}
+					_thread_lock_id = this_id;
+					return std::unique_lock<std::mutex>(_master_shader_mutex);
+				}
+			private:
+				template<class T>
+				static size_t hash(const T& value) {
+					return std::hash<T>{}(value);
 				}
 				static std::mutex _master_shader_mutex;
-			private:
+				static volatile size_t _thread_lock_id;
 				std::unique_lock<std::mutex> lock;
 			};
 			static constexpr GLuint INVALID_SHADER_ID = 0;
@@ -206,14 +223,14 @@ namespace foton {
 				shader_t(load_shader(vertex_source, GL_VERTEX_SHADER), load_shader(fragment_source, GL_FRAGMENT_SHADER), load_shader(geometry_source, GL_GEOMETRY_SHADER)) {};
 			shader_t(const shader_t&) = delete;
 			shader_t operator=(const shader_t&) = delete;
-			shader_t(shader_t&& other) : id(other.id) {
+			shader_t(shader_t&& other) noexcept : id(other.id) {
 				other.id = INVALID_SHADER_ID;
 			}
-			shader_t operator=(shader_t&& other) {
+			shader_t operator=(shader_t&& other) noexcept {
 				std::swap(*this, other);
 			}
 			void update_from(shader_t&& other) {
-				auto lock = std::unique_lock<std::mutex>(shader_bind_t::_master_shader_mutex);
+				auto lock = shader_t::shader_bind_t::aquire_lock();
 				if (id > 0) {
 					glDeleteProgram(id);
 				}
@@ -237,22 +254,23 @@ namespace foton {
 			shader_bind_t use() {
 				return shader_bind_t(id);
 			}
-			struct shader_drawer_wrapper_t : drawer_t {
+			struct shader_drawer_t : drawer_t {
 				shader_t& parent;
 				drawer_t& drawer;
-				shader_drawer_wrapper_t(shader_t& shader, drawer_t& drawer) : parent(shader), drawer(drawer) {}
-				void draw() override {
+				uniform_t<mat4f> trans_uniform;
+				shader_drawer_t(shader_t& shader, drawer_t& drawer) : parent(shader), drawer(drawer),
+					trans_uniform(parent.get_uniform<mat4f>("trans", false)){}
+				void draw_visable(const mat4f& mat) override {
 					auto shader_bind = parent.use();
-					drawer.draw();
+					drawer.draw(mat);
 				}
 			};
-			shader_drawer_wrapper_t wrap(drawer_t& drawer) {
-				return shader_drawer_wrapper_t(*this, drawer);
+			shader_drawer_t wrap(drawer_t& drawer) {
+				return shader_drawer_t(*this, drawer);
 			}
 			private:
 				void delete_program() {
 					if (id > 0) {
-						auto lock = std::unique_lock<std::mutex>(shader_bind_t::_master_shader_mutex);
 						glDeleteProgram(id);
 						id = INVALID_SHADER_ID;
 					}
@@ -262,8 +280,8 @@ namespace foton {
 			const filesystem::path vertex_path;
 			const filesystem::path fragment_path;
 			const filesystem::path geometry_path;
-			shader_with_paths_t(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) :
-			 vertex_path(vertex_path), fragment_path(fragment_path), geometry_path(geometry_path), _shader(load_new_shader()) {
+			shader_with_paths_t(const filesystem::path& vertex_path, const filesystem::path& fragment_path, const filesystem::path& geometry_path) 
+				: vertex_path(vertex_path), fragment_path(fragment_path), geometry_path(geometry_path), _shader(load_new_shader()) {
 			}
 			void reload_shader() {
 				_shader.update_from(load_new_shader());
@@ -327,3 +345,4 @@ namespace foton {
 	}
 }
 std::mutex foton::shader::shader_t::shader_bind_t::_master_shader_mutex;
+size_t volatile foton::shader::shader_t::shader_bind_t::_thread_lock_id;

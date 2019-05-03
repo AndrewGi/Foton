@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include "drawer.hpp"
+#include "graphics/drawer.hpp"
 #include "glew/glew.h"
 #include "GLFW/glfw3.h"
 #include "utility/fps_counter.hpp"
@@ -134,8 +134,7 @@ namespace foton {
 				Later: hoping to have this multithreaded or more advance in some way
 			*/
 			std::for_each(_drawers.begin(), _drawers.end(), [](drawer_t* drawer) {
-				if (drawer->is_visable)
-					drawer->draw();
+				drawer->draw(mat4f::Identity());
 			});
 			glfwSwapBuffers(_glfw_window);
 			fps_counter.frame();

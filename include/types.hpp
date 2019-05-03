@@ -1,6 +1,8 @@
 #pragma once
 #include "Eigen/Geometry"
 namespace foton {
+	using byte_t = uint8_t;
+	
 	using vec3f = Eigen::Vector3f;
 	using vec2f = Eigen::Vector2f;
 

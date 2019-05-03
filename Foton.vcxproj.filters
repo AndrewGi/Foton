@@ -48,9 +48,6 @@
     <ClInclude Include="include\gl\gl_objects.hpp">
       <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
-    <ClInclude Include="include\gl\shader.hpp">
-      <Filter>Header Files\foton\graphics\gl</Filter>
-    </ClInclude>
     <ClInclude Include="include\soundio\endian.h">
       <Filter>Header Files\soundio</Filter>
     </ClInclude>
@@ -75,9 +72,6 @@
     <ClInclude Include="include\graphics\camera.hpp">
       <Filter>Header Files\foton\graphics</Filter>
     </ClInclude>
-    <ClInclude Include="include\drawer.hpp">
-      <Filter>Header Files\foton\window</Filter>
-    </ClInclude>
     <ClInclude Include="include\object.hpp">
       <Filter>Header Files\foton</Filter>
     </ClInclude>
@@ -92,6 +86,12 @@
     </ClInclude>
     <ClInclude Include="include\audio\mp3.hpp">
       <Filter>Header Files\foton\audio</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\drawer.hpp">
+      <Filter>Header Files\foton\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\shader.hpp">
+      <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

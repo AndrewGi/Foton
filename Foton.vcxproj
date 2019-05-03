@@ -172,7 +172,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>SOUNDIO_STATIC_LIBRARY;_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING;GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SOUNDIO_STATIC_LIBRARY;_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING;_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING;GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -224,12 +224,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\audio\mp3.hpp" />
+    <ClInclude Include="include\graphics\drawer.hpp" />
+    <ClInclude Include="include\graphics\gl\shader.hpp" />
     <ClInclude Include="include\types.hpp" />
     <ClInclude Include="include\audio\sound.hpp" />
     <ClInclude Include="include\audio\soundio_cpp.hpp" />
-    <ClInclude Include="include\drawer.hpp" />
     <ClInclude Include="include\gl\gl_objects.hpp" />
-    <ClInclude Include="include\gl\shader.hpp" />
     <ClInclude Include="include\graphics\camera.hpp" />
     <ClInclude Include="include\model.hpp" />
     <ClInclude Include="include\mutex.hpp" />

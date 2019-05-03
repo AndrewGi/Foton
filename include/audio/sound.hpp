@@ -1,9 +1,11 @@
 #pragma once
 #include "soundio_cpp.hpp"
 #include <vector>
+#include <chrono>
 namespace foton {
 	namespace audio {
 		using sample_t = soundio::sample_t;
+		using duration_t = std::chrono::duration<double, std::ratio<1, 1>>;
 		std::unique_ptr<soundio::soundio_t> sound_io = nullptr;
 		void initalize() {
 			sound_io = std::make_unique<soundio::soundio_t>();
@@ -47,7 +49,7 @@ namespace foton {
 				return _samples.get();
 			}
 			void resize(size_t sample_count) {
-				sample_count = sample_count;
+				_sample_count = sample_count;
 				_samples = std::unique_ptr<sample_t[]>(new sample_t[sample_count]);
 			}
 			size_t count() const {
@@ -73,8 +75,8 @@ namespace foton {
 			out_stream_t _out;
 		};
 		struct sample_generator_t {
-			virtual size_t size_hint(size_t max_samples) = 0;
-			virtual void generate_samples(sample_t* samples, size_t amount, size_t channel_num) = 0;
+			virtual size_t size_hint(size_t max_sample_count) = 0;
+			virtual void generate_samples(sample_t* samples, size_t sample_count) = 0;
 		};
 		struct player_t {
 			out_stream_t stream;
@@ -87,20 +89,23 @@ namespace foton {
 					buffer.reset(new sample_t[size]);
 				}
 			}
+			size_t channel_count() const {
+				return 2;
+			}
 			player_t(out_stream_t stream, std::unique_ptr<sample_generator_t> generator) :
 				stream(std::move(stream)), generator(std::move(generator)) {
 				stream.stream.user_data = nullptr;
 				stream.stream.user_size_hint_callback = _stream_size_hint;
 				stream.stream.user_write_callback = _stream_generator;
 			}
-			static void _stream_generator(soundio::out_stream_t& stream, soundio::out_stream_t::write_area_t& write_area) {
+			static void _stream_generator(soundio::out_stream_t& stream, sample_t* out_samples, size_t sample_count) {
 				player_t& player = *static_cast<player_t*>(stream.user_data);
-				player.generator->generate_samples(player.buffer.get(), write_area.samples_left, write_area.channel_index);
+				player.generator->generate_samples(out_samples, sample_count);
+				
 			}
 			static size_t _stream_size_hint(soundio::out_stream_t& stream, size_t max_samples) {
 				player_t& player = *static_cast<player_t*>(stream.user_data);
 				size_t size = player.generator->size_hint(max_samples);
-				player.grow_to(size);
 				return player.generator->size_hint(max_samples);
 			}
 		};

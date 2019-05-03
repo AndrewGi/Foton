@@ -1,7 +1,7 @@
 #pragma once
 #include <mutex>
 #include <stdexcept>
-#include "../../windows/drawer.hpp"
+#include "../drawer.hpp"
 #include "glew/glew.h"
 #include <vector>
 namespace foton {
@@ -256,6 +256,7 @@ namespace foton {
 					uint64_t offset = va.offset;
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
 					glEnableVertexAttribArray(va.index);
+					GL_MAX_VERTEX_ATTRIBS;
 					check_gl_errors("after assigning vertex attribute");
 				}
 
@@ -283,7 +284,7 @@ namespace foton {
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
-			void draw() override {
+			void draw_visable(const mat4f& mat) override {
 				if (_vertex_coords != nullptr) {
 					auto b = bind();
 

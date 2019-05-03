@@ -8,12 +8,13 @@ namespace foton {
 			std::vector<object_t*> objects;
 			void draw_with(const camera::camera_t& camera) {
 				camera.recalculate();
-				mat4f projection = camera.projection_matrix;
-				mat4f view = camera.view_matrix;
+				const mat4f projection = camera.projection_matrix;
+				const mat4f view = camera.view_matrix;
 				for (const object_t* object : objects) {
-					object->
+					const mat4f model_mat = object->model_mat();
+
 				}
 			}
-		}
+		};
 	}
 }
