@@ -30,8 +30,11 @@ namespace foton {
 					return;
 				_location = glGetUniformLocation(program(), name());
 
-				if (throw_on_not_found && _location == -1)
-					throw shader_error_t("unable to get uniform location");
+				if (_location == -1) {
+					glGetError();
+					if(throw_on_not_found)
+						throw shader_error_t("unable to get uniform location");
+				}
 			}
 			void maybe_update() {
 				if (_last_program != program()) {
@@ -50,6 +53,9 @@ namespace foton {
 			}
 			const char* name() const {
 				return _name;
+			}
+			bool is_valid() const {
+				return location() != -1 && program() != 0;
 			}
 		private:
 			GLint _location = -1;

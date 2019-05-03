@@ -14,11 +14,17 @@ namespace foton {
 		void check_gl_errors(const char* message) {
 			if constexpr (_DEBUG) { //Should probably use a macro but this is cleaner for now
 				if (auto err = glGetError(); err != GL_NO_ERROR)
-					throw gl_error_t(err, std::string(message));
+					throw gl_error_t(err, message);
 			} 
 		}
+		void clear_gl_errors(bool throw_on_no_error = true) {
+			const auto err = glGetError();
+			if (err != GL_NO_ERROR && throw_on_no_error) {
+				throw gl_error_t(err, "clear_gl_errors called while no errors");
+			}
+		}
 		template<class T>
-		static constexpr std::pair<GLenum, GLint> _c_to_gl_type() {
+		static constexpr std::pair<GLenum, GLint> T_gl_type() {
 			if constexpr (std::is_same_v<T, GLfloat>) {
 				return { GL_FLOAT, 1 };
 			}
@@ -36,12 +42,22 @@ namespace foton {
 				static_assert(false, "unsupported vertex attribute type");
 			}
 		}
-		using mutex = std::mutex;
-		using lock = std::unique_lock<mutex>;
 		struct wrong_enum_error_t : std::logic_error {
 			GLenum incorrect_enum;
 			wrong_enum_error_t(GLenum incorrect_enum) : incorrect_enum(incorrect_enum), std::logic_error("TODO: enum to string") {}
 		};
+		static constexpr size_t gl_type_size(GLenum type) {
+			switch (type) {
+			case GL_INT:
+			case GL_FLOAT:
+				return 4;
+			default:
+				//implement more types here
+				throw wrong_enum_error_t(type);
+			}
+		}
+		using mutex = std::mutex;
+		using lock = std::unique_lock<mutex>;
 		namespace buffer_locks {
 			mutex vertex_attributes;
 			mutex atomic_counter;
@@ -202,7 +218,10 @@ namespace foton {
 				return std::get<1>(_c_to_gl_type<T>());
 			}
 			static constexpr GLenum gl_type() {
-				return std::get<0>(_c_to_gl_type<T>());
+				return std::get<0>(gl_type_pair());
+			}
+			static constexpr std::pair<GLenum, GLint> gl_type_pair() {
+				return T_gl_type<T>();
 			}
 			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
 				bind().upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
@@ -224,13 +243,17 @@ namespace foton {
 				GLuint offset;
 				GLuint index;
 				GLuint stride;
+				std::pair<GLenum, GLuint> type_info;
 			};
 			struct vertex_attribute_storage_location_t : buffer_t, vertex_attribute_location_t {
 
 			};
 			template<class T>
 			struct vertex_attribute_t : vbo_t<T>, vertex_attribute_location_t {
-			
+				vertex_attribute_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
+					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t(location) {
+					location.type_info = gl_type_pair();
+				}
 			};
 			struct vao_bind_t {
 				static mutex _vao_bind_lock;
