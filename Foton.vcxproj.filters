@@ -45,9 +45,6 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\gl\gl_objects.hpp">
-      <Filter>Header Files\foton\graphics\gl</Filter>
-    </ClInclude>
     <ClInclude Include="include\soundio\endian.h">
       <Filter>Header Files\soundio</Filter>
     </ClInclude>
@@ -92,6 +89,15 @@
     </ClInclude>
     <ClInclude Include="include\windows\window.hpp">
       <Filter>Header Files\foton\window</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\mesh.hpp">
+      <Filter>Header Files\foton\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\texture.hpp">
+      <Filter>Header Files\foton\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\gl_objects.hpp">
+      <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

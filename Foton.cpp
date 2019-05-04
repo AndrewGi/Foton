@@ -3,6 +3,8 @@
 
 #include "pch.h"
 #include "windows/window.hpp"
+
+static_assert(sizeof(foton::vec3f) == sizeof(float) * 3);
 #include "2D.hpp"
 #include "graphics/gl/gl_objects.hpp"
 #include "graphics/gl/shader.hpp"

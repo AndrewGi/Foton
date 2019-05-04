@@ -36,6 +36,9 @@ namespace foton {
 			else if constexpr (std::is_same_v<T, GLint>) {
 				return { GL_INT, 1 };
 			} 
+			else if constexpr (std::is_same_v<T, GLuint>) {
+				return { GL_UNSIGNED_INT, 1 };
+			}
 			else if constexpr (std::is_same_v<T, Eigen::Vector3f>) {
 				return { GL_FLOAT, 3 };
 			}
@@ -55,6 +58,8 @@ namespace foton {
 			switch (type) {
 			case GL_INT:
 			case GL_FLOAT:
+			case GL_UNSIGNED_INT:
+				static_assert(sizeof(GLint) == 4 && sizeof(GLfloat) == 4 && sizeof(GLuint) == 4);
 				return 4;
 			default:
 				//implement more types here
@@ -242,13 +247,16 @@ namespace foton {
 			}
 			
 		};
+		struct ebo_t : buffer_t {
+
+		};
 		static_assert(sizeof(buffer_t) == sizeof(vbo_t<float>));
-		struct vao_t : drawer_t{
+		struct vao_t {
 			struct vertex_attribute_location_t {
 				GLuint offset;
 				GLuint index;
 				GLuint stride;
-				std::pair<GLenum, GLuint> type_info;
+				std::pair<GLenum, GLuint> gl_type_info;
 			};
 			struct vertex_attribute_storage_location_t : buffer_t, vertex_attribute_location_t {
 
@@ -312,11 +320,19 @@ namespace foton {
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
-			void draw_visable(const mat4f& mat) override {
-				if (_vertex_coords != nullptr) {
+			bool has_vertices() const {
+				return _vertex_coords != nullptr;
+			}
+			GLuint amount_of_vertices() const {
+				if (!has_vertices())
+					return 0;
+				return _vertex_coords->size()/gl_type_size(std::get<0>(_vertex_coords->gl_type_info))*std::get<1>(_vertex_coords->gl_type_info));
+			}
+			void draw_call() {
+				if (has_vertices()) {
 					auto b = bind();
-
-					glDrawArrays(_draw_shapes, 0, _vertex_coords->size()/sizeof(Eigen::Vector3f)); //TODO: /sizeof(float)*3
+					
+					glDrawArrays(_draw_shapes, 0, amount_of_vertices()); //TODO: /sizeof(float)*3
 				}
 			}
 		private:
