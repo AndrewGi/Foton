@@ -284,7 +284,6 @@ namespace foton {
 					uint64_t offset = va.offset;
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
 					glEnableVertexAttribArray(va.index);
-					GL_MAX_VERTEX_ATTRIBS;
 					check_gl_errors("after assigning vertex attribute");
 				}
 
@@ -316,7 +315,7 @@ namespace foton {
 				if (_vertex_coords != nullptr) {
 					auto b = bind();
 
-					glDrawArrays(_draw_shapes, 0, _vertex_coords->size()/sizeof(Eigen::Vector3f)); //TODO: /sizeof(float)*3
+					glDrawArrays(_draw_shapes, 0, _vertex_coords->size()/std::get<1>(_vertex_coords->type_info)); //TODO: /sizeof(float)*3
 				}
 			}
 		private:

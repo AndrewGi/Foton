@@ -12,6 +12,21 @@
 
 */
 namespace foton {
-	using mutex = std::mutex;
-	using lock = std::unique_lock<mutex>;
+	using mutex_t = std::mutex;
+	struct thread_mutex_t {
+		mutex_t mutex;
+		void 
+	};
 }
+template<>
+struct std::unique_lock<foton::thread_mutex_t> {
+	std::unique_lock<std::mutex> _unique_lock;
+	foton::thread_mutex_t& _mutex;
+	std::unique_lock(foton::thread_mutex_t& mutex) : _mutex(mutex) {}
+	bool owns_lock() const {
+		_unique_lock.owns_lock();
+	}
+	bool same_thread() const {
+
+	}
+};
