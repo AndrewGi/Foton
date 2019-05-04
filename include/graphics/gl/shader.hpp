@@ -31,7 +31,7 @@ namespace foton {
 				_location = glGetUniformLocation(program(), name());
 
 				if (_location == -1) {
-					glGetError();
+					while (glGetError() != GL_NO_ERROR); //Clear GL errors
 					if(throw_on_not_found)
 						throw shader_error_t("unable to get uniform location");
 				}
@@ -111,8 +111,7 @@ namespace foton {
 			}
 		};
 		template<>
-		struct uniform_t<Eigen::Matrix4f> : uniform_location_t {
-			using mat4f = Eigen::Matrix4f;
+		struct uniform_t<mat4f> : uniform_location_t {
 			uniform_t() : uniform_location_t() {}
 			uniform_t(const GLuint* program, const char* name) : uniform_location_t(program, name) {}
 			explicit operator mat4f() {
@@ -121,7 +120,7 @@ namespace foton {
 				}
 				float values[4 * 4];
 				maybe_update();
-				glProgramUniformMatrix4fv(program(), location(), 4, GL_FALSE, values);
+				glProgramUniformMatrix4fv(program(), location(), 1, GL_FALSE, values);
 				return mat4f(values);
 			}
 			const mat4f operator=(const mat4f& mat) {
@@ -129,7 +128,7 @@ namespace foton {
 					return {};
 				}
 				maybe_update();
-				glProgramUniformMatrix4fv(program(), location(), 4, GL_FALSE, mat.data());
+				glProgramUniformMatrix4fv(program(), location(), 1, GL_FALSE, mat.data());
 				return mat;
 			}
 		};
@@ -152,12 +151,18 @@ namespace foton {
 						_thread_lock_id = hash(std::this_thread::get_id());
 					}
 				}
+				void unuse() {
+					if (lock.owns_lock()) {
+						glUseProgram(0);
+					}
+				}
 				~shader_bind_t() {
 					if (lock.owns_lock()) {
 						glUseProgram(0);
 						_thread_lock_id = 0;
 					}
 				}
+			private:
 				static std::unique_lock<std::mutex> aquire_lock() {
 					size_t this_id = hash(std::this_thread::get_id());
 					if (_thread_lock_id == this_id) {
@@ -166,7 +171,6 @@ namespace foton {
 					_thread_lock_id = this_id;
 					return std::unique_lock<std::mutex>(_master_shader_mutex);
 				}
-			private:
 				template<class T>
 				static size_t hash(const T& value) {
 					return std::hash<T>{}(value);
@@ -235,14 +239,6 @@ namespace foton {
 			shader_t operator=(shader_t&& other) noexcept {
 				std::swap(*this, other);
 			}
-			void update_from(shader_t&& other) {
-				auto lock = shader_t::shader_bind_t::aquire_lock();
-				if (id > 0) {
-					glDeleteProgram(id);
-				}
-				id = other.id;
-				other.id = 0;
-			}
 			~shader_t() {
 				delete_program();
 			}
@@ -260,6 +256,15 @@ namespace foton {
 			shader_bind_t use() {
 				return shader_bind_t(id);
 			}
+			void update_from(shader_t&& other) {
+				shader_bind_t lock = use(); //bind the shader state so we can mess with it
+				lock.unuse(); //unuse so opengl isn't using the resources anymore
+				if (id > 0) {
+					glDeleteProgram(id);
+				}
+				id = other.id;
+				other.id = 0;
+			}
 			struct shader_drawer_t : drawer_t {
 				shader_t& parent;
 				drawer_t& drawer;
@@ -268,6 +273,8 @@ namespace foton {
 					trans_uniform(parent.get_uniform<mat4f>("trans", false)){}
 				void draw_visable(const mat4f& mat) override {
 					auto shader_bind = parent.use();
+					if (trans_uniform.is_valid())
+						trans_uniform = mat;
 					drawer.draw(mat);
 				}
 			};
@@ -338,6 +345,7 @@ namespace foton {
 			}
 			shader_t _shader;
 		};
+		/*
 		struct shader_transform_uniforms_t {
 			using mat4f = Eigen::Matrix4f;
 			uniform_t<mat4f> model_mat;
@@ -348,6 +356,7 @@ namespace foton {
 				projection_mat(shader.get_uniform<mat4f>("projection_mat", false)) {}
 			
 		};
+		*/
 	}
 }
 std::mutex foton::shader::shader_t::shader_bind_t::_master_shader_mutex;

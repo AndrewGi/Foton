@@ -63,9 +63,6 @@
     <ClInclude Include="include\audio\soundio_cpp.hpp">
       <Filter>Header Files\foton\audio</Filter>
     </ClInclude>
-    <ClInclude Include="include\window.hpp">
-      <Filter>Header Files\foton\window</Filter>
-    </ClInclude>
     <ClInclude Include="include\utility\fps_counter.hpp">
       <Filter>Header Files\foton\utility</Filter>
     </ClInclude>
@@ -93,6 +90,9 @@
     <ClInclude Include="include\graphics\gl\shader.hpp">
       <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
+    <ClInclude Include="include\windows\window.hpp">
+      <Filter>Header Files\foton\window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -114,6 +114,12 @@
       <Filter>Resource Files\shaders</Filter>
     </None>
     <None Include="resources\shaders\test1.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\test2.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\test2.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>

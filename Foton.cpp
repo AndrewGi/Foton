@@ -33,13 +33,11 @@ int main()
 	window_t main_window("foton test", 1920, 1080);
 	main_window.set_clear_color(0.1f, 0.1f, 0.1f);
 	main_window.fps_counter = fps_counter_t(250ms, print_fps);
-	auto shader_with_paths = shader::shader_with_paths_t::guess_filetypes({ "resources/shaders/test1.frag", "resources/shaders/test1.vert"});
+	auto shader_with_paths = shader::shader_with_paths_t::guess_filetypes({ "resources/shaders/test2.frag", "resources/shaders/test2.vert"});
 	auto& shader = shader_with_paths.shader();
 	std::this_thread::sleep_for(.5s);
 	GL::check_gl_errors("after shader_load");
 	shader::uniform_t<float> time_uniform = shader.get_uniform<float>("time");
-	shader::shader_transform_uniforms_t stu(shader);
-	stu.model_mat = mat4f();
 	GL::check_gl_errors("before vao");
 	foton::GL::vao_t vao;
 	vao.bind().emplace_vertex_attribute<vec3f>(0, 0, 0, std::initializer_list<vec3f>{ {-.75,-.75, 0 }, {0, .75, 0}, {.75, -.75, .75} });

@@ -124,10 +124,12 @@ namespace foton {
 			auto cl = aquire_glfw_lock(); //Don't want to add anything while we drawing
 			_drawers.push_back(drawer_p);
 		}
-		void render() {
+		void render_with(const camera::camera_t& camera) {
+			camera.recalculate();
+			mat4f trans = camera.projection_matrix * camera.view_matrix;
 			auto cl = aquire_glfw_lock();
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			camera().set_viewport();
+			camera.set_viewport();
 			/*
 				For now, just a for each through all the renderable objects
 
@@ -139,13 +141,16 @@ namespace foton {
 			glfwSwapBuffers(_glfw_window);
 			fps_counter.frame();
 		}
+		void render() {
+			render_with(default_camera());
+		}
 		using keyboard_key_t = int;
 		using keyboard_action_t = int;
 		using keyboard_mods_t = int;
 		void set_key_callback(std::function<void(window_t&, keyboard_key_t, keyboard_action_t, keyboard_mods_t)> callback) {
 			_on_key_cb = callback;
 		}
-		camera::camera_t& camera() {
+		camera::camera_t& default_camera() {
 			return _camera;
 		}
 	private:

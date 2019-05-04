@@ -13,15 +13,20 @@ namespace foton {
 		};
 		void check_gl_errors(const char* message) {
 			if constexpr (_DEBUG) { //Should probably use a macro but this is cleaner for now
-				if (auto err = glGetError(); err != GL_NO_ERROR)
+				auto err = glGetError();
+				if (err != GL_NO_ERROR) {
 					throw gl_error_t(err, message);
+					check_gl_errors("multiple errors");
+				}
 			} 
 		}
 		void clear_gl_errors(bool throw_on_no_error = true) {
-			const auto err = glGetError();
+			auto err = glGetError();
 			if (err != GL_NO_ERROR && throw_on_no_error) {
 				throw gl_error_t(err, "clear_gl_errors called while no errors");
 			}
+			while (err != GL_NO_ERROR)
+				glGetError();
 		}
 		template<class T>
 		static constexpr std::pair<GLenum, GLint> T_gl_type() {
@@ -214,8 +219,8 @@ namespace foton {
 		};
 		template<class T>
 		struct vbo_t : buffer_t {
-			static constexpr auto amount_per_element() {
-				return std::get<1>(_c_to_gl_type<T>());
+			static constexpr GLint amount_per_element() {
+				return std::get<1>(gl_type_pair());
 			}
 			static constexpr GLenum gl_type() {
 				return std::get<0>(gl_type_pair());
@@ -252,7 +257,7 @@ namespace foton {
 			struct vertex_attribute_t : vbo_t<T>, vertex_attribute_location_t {
 				vertex_attribute_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
 					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t(location) {
-					location.type_info = gl_type_pair();
+					type_info = vbo_t<T>::gl_type_pair();
 				}
 			};
 			struct vao_bind_t {

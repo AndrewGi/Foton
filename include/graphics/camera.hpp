@@ -51,10 +51,6 @@ namespace foton {
 				view_matrix = view.as_mat();
 				projection_matrix = projection.as_mat();
 			}
-			void set_uniforms(shader::shader_transform_uniforms_t& uniforms) const {
-				uniforms.projection_mat = projection_matrix;
-				uniforms.view_mat = view_matrix;
-			}
 			void set_viewport() const {
 				glViewport(0, 0, projection.width, projection.height);
 			}

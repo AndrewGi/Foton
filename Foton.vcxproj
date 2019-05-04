@@ -154,7 +154,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING;_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING;GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SOUNDIO_STATIC_LIBRARY;_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING;_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING;GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -238,7 +238,7 @@
     <ClInclude Include="include\soundio\endian.h" />
     <ClInclude Include="include\soundio\soundio.h" />
     <ClInclude Include="include\utility\fps_counter.hpp" />
-    <ClInclude Include="include\window.hpp" />
+    <ClInclude Include="include\windows\window.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -259,6 +259,8 @@
     <None Include="resources\shaders\test1.frag" />
     <None Include="resources\shaders\shapes.geom" />
     <None Include="resources\shaders\test1.vert" />
+    <None Include="resources\shaders\test2.frag" />
+    <None Include="resources\shaders\test2.vert" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\models\bunny.obj">
