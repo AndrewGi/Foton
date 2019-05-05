@@ -9,7 +9,8 @@ Features:
 - [ ] Compute
 - [ ] Shadows
 - [ ] UI
-- [ ] Audio
+- [x] Objects/Scenes (waiting for other features to be done)
+- [x] Audio (Currenting using soundio and untested) (will probably switch to OpenAL)
 
 Demo triangle:
 
