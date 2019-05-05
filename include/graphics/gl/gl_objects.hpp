@@ -342,6 +342,17 @@ namespace foton {
 			GLenum _draw_shapes = GL_TRIANGLES;
 			
 		};
+		struct texture_t {
+			struct texture_bind_t {
+
+				static 
+			}
+			texture_t() {
+				glGenTextures(1, &_id);
+			}
+		private:
+			GLuint _id = 0;
+		}
 	}
 }
 std::mutex foton::GL::vao_t::vao_bind_t::_vao_bind_lock = {};

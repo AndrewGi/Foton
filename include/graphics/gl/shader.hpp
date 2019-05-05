@@ -7,6 +7,7 @@
 #include "../drawer.hpp"
 #include "glew/glew.h"
 #include "Eigen/Geometry"
+#include "../../mutex.hpp"
 namespace foton {
 	namespace shader {
 		namespace filesystem = std::filesystem; //why is this still in experimental?
@@ -142,14 +143,12 @@ namespace foton {
 
 			struct shader_bind_t {
 				const GLuint program = 0;
-				shader_bind_t(GLuint program) : program(program), lock(aquire_lock()) {
+				shader_bind_t(GLuint program) : program(program), lock(_master_shader_mutex) {
 					glUseProgram(program);
 				}
 				shader_bind_t(const shader_bind_t&) = delete;
 				shader_bind_t(shader_bind_t&& other) : program(other.program), lock(std::move(other.lock)) {
-					if (lock.owns_lock()) {
-						_thread_lock_id = hash(std::this_thread::get_id());
-					}
+					//TODO: update thread_id in mutex??
 				}
 				void unuse() {
 					if (lock.owns_lock()) {
@@ -157,27 +156,11 @@ namespace foton {
 					}
 				}
 				~shader_bind_t() {
-					if (lock.owns_lock()) {
-						glUseProgram(0);
-						_thread_lock_id = 0;
-					}
+					unuse();
 				}
 			private:
-				static std::unique_lock<std::mutex> aquire_lock() {
-					size_t this_id = hash(std::this_thread::get_id());
-					if (_thread_lock_id == this_id) {
-						throw std::runtime_error("shader already being used in current thread");
-					}
-					_thread_lock_id = this_id;
-					return std::unique_lock<std::mutex>(_master_shader_mutex);
-				}
-				template<class T>
-				static size_t hash(const T& value) {
-					return std::hash<T>{}(value);
-				}
-				static std::mutex _master_shader_mutex;
-				static volatile size_t _thread_lock_id;
-				std::unique_lock<std::mutex> lock;
+				static thread_mutex_t _master_shader_mutex;
+				std::unique_lock<thread_mutex_t> lock;
 			};
 			static constexpr GLuint INVALID_SHADER_ID = 0;
 
@@ -265,22 +248,6 @@ namespace foton {
 				id = other.id;
 				other.id = 0;
 			}
-			struct shader_drawer_t : drawer_t {
-				shader_t& parent;
-				drawer_t& drawer;
-				uniform_t<mat4f> trans_uniform;
-				shader_drawer_t(shader_t& shader, drawer_t& drawer) : parent(shader), drawer(drawer),
-					trans_uniform(parent.get_uniform<mat4f>("trans", false)){}
-				void draw_visable(const mat4f& mat) override {
-					auto shader_bind = parent.use();
-					if (trans_uniform.is_valid())
-						trans_uniform = mat;
-					drawer.draw(mat);
-				}
-			};
-			shader_drawer_t wrap(drawer_t& drawer) {
-				return shader_drawer_t(*this, drawer);
-			}
 			private:
 				void delete_program() {
 					if (id > 0) {
@@ -359,5 +326,4 @@ namespace foton {
 		*/
 	}
 }
-std::mutex foton::shader::shader_t::shader_bind_t::_master_shader_mutex;
-size_t volatile foton::shader::shader_t::shader_bind_t::_thread_lock_id;
+foton::thread_mutex_t foton::shader::shader_t::shader_bind_t::_master_shader_mutex;
