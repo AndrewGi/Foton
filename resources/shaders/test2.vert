@@ -6,5 +6,5 @@ uniform mat4 trans;
 const float PI = 3.1415926535897932384626433832795;
 void main()
 {
-    gl_Position = trans * vec4(vp,1.0);
+    gl_Position = vec4(vp,1.0);
 }

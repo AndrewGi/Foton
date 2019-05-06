@@ -66,7 +66,7 @@ namespace foton {
 				throw wrong_enum_error_t(type);
 			}
 		}
-		using mutex = std::mutex;
+		using mutex = thread_mutex_t;
 		using lock = std::unique_lock<mutex>;
 		namespace buffer_locks {
 			mutex vertex_attributes;
@@ -233,7 +233,7 @@ namespace foton {
 			static constexpr std::pair<GLenum, GLint> gl_type_pair() {
 				return T_gl_type<T>();
 			}
-			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
+			void upload(const T* data, GLsizei count, GLenum usage = mevb) {
 				bind().upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
 			}
 			vbo_t() : buffer_t(GL_ARRAY_BUFFER) {
@@ -265,12 +265,12 @@ namespace foton {
 			struct vertex_attribute_t : vbo_t<T>, vertex_attribute_location_t {
 				vertex_attribute_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
 					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t(location) {
-					type_info = vbo_t<T>::gl_type_pair();
+					gl_type_info = vbo_t<T>::gl_type_pair();
 				}
 			};
 			struct vao_bind_t {
-				static mutex _vao_bind_lock;
-				vao_bind_t(GLuint id, vao_t& parent) : _id(id), _lock(_vao_bind_lock), _parent(parent) {
+				static mutex _mutex;
+				vao_bind_t(GLuint id, vao_t& parent) : _id(id), _lock(_mutex), _parent(parent) {
 					glBindVertexArray(id);
 				}
 				vao_bind_t(const vao_bind_t&) = delete;
@@ -286,9 +286,6 @@ namespace foton {
 				template<class T>
 				void assign_vertex_attribute(vertex_attribute_t<T>& va) {
 					auto bind = va.bind();
-					if (va.index == 0 && _parent._vertex_coords == nullptr) {
-						_parent._vertex_coords = reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
-					}
 					uint64_t offset = va.offset;
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
 					glEnableVertexAttribArray(va.index);
@@ -320,24 +317,8 @@ namespace foton {
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
-			bool has_vertices() const {
-				return _vertex_coords != nullptr;
-			}
-			GLuint amount_of_vertices() const {
-				if (!has_vertices())
-					return 0;
-				return _vertex_coords->size()/gl_type_size(std::get<0>(_vertex_coords->gl_type_info))*std::get<1>(_vertex_coords->gl_type_info));
-			}
-			void draw_call() {
-				if (has_vertices()) {
-					auto b = bind();
-					
-					glDrawArrays(_draw_shapes, 0, amount_of_vertices()); //TODO: /sizeof(float)*3
-				}
-			}
 		private:
 			std::vector<vertex_attribute_storage_location_t> _buffers;
-			vertex_attribute_storage_location_t* _vertex_coords = nullptr; //Too know how many to draw
 			GLuint _id;
 			GLenum _draw_shapes = GL_TRIANGLES;
 			
@@ -345,14 +326,57 @@ namespace foton {
 		struct texture_t {
 			struct texture_bind_t {
 
-				static 
+				texture_bind_t(texture_t& parent) : _parent(parent), _lock(_mutex) {
+					glBindTexture(_target, _parent._id);
+				}
+				bool valid() const {
+					return _lock.owns_lock();
+				}
+				~texture_bind_t() {
+					if (valid())
+						glBindTexture(_target, 0);
+				}
+				texture_t& parent() {
+					return _parent;
+				}
+				void upload(const byte_t* pixels, GLsizei width, GLsizei height, GLint internal_format = GL_RGB, GLint format = GL_RGB, GLenum type = GL_FLOAT) {
+					glTexImage2D(_target, 0, internal_format, width, height, 0, format, type, pixels);
+					_parent.width() = width;
+					_parent.height() = height;
+				}
+			private:
+				static constexpr GLenum _target = GL_TEXTURE_2D;
+				texture_t& _parent;
+				std::unique_lock<foton::thread_mutex_t> _lock;
+				static foton::thread_mutex_t _mutex;
+			};
+			GLuint& width() {
+				return _width;
+			}
+			GLuint& height() {
+				return _height;
+			}
+			texture_bind_t bind() {
+				return texture_bind_t(*this);
 			}
 			texture_t() {
 				glGenTextures(1, &_id);
 			}
+			bool valid() const {
+				return _id != 0;
+			}
+			~texture_t() {
+				if (valid()) {
+					glDeleteTextures(1, &_id);
+					_id = 0;
+				}
+			}
 		private:
 			GLuint _id = 0;
-		}
+			GLuint _width = 0;
+			GLuint _height = 0;
+		};
 	}
 }
-std::mutex foton::GL::vao_t::vao_bind_t::_vao_bind_lock = {};
+std::mutex foton::GL::vao_t::vao_bind_t::_mutex = {};
+foton::thread_mutex_t foton::GL::texture_t::texture_bind_t::_mutex = {};

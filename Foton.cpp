@@ -44,8 +44,6 @@ int main()
 	foton::GL::vao_t vao;
 	vao.bind().emplace_vertex_attribute<vec3f>(0, 0, 0, std::initializer_list<vec3f>{ {-.75,-.75, 0 }, {0, .75, 0}, {.75, -.75, .75} });
 
-	auto wrapper_vao = shader.wrap(vao);
-	main_window.add_drawer(&wrapper_vao);
 
 	audio::initalize();
 	std::cout << "Output devices:\n";
@@ -66,13 +64,14 @@ int main()
 			GL::check_gl_errors("after reloading shaders");
 		}
 		if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-			window.camera().view.position + vec3f(0, 0, -.1f);
+			//window.camera().view.position + vec3f(0, 0, -.1f);
 		}
 	});
 	auto game_loop_start_time = current_time();
 	std::cout << "start!"; //This gets overwritten by the fps_counter
+	camera::camera_t camera;
 	while (!main_window.should_close()) {
-		main_window.render();
+		main_window.render_with(camera);
 		time_uniform = std::chrono::duration<float, std::ratio<1>>(main_window.fps_counter.runtime()).count(); //update uniform
 		glfwPollEvents();
 	}

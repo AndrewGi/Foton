@@ -228,7 +228,6 @@
     <ClInclude Include="include\graphics\gl\gl_objects.hpp" />
     <ClInclude Include="include\graphics\gl\shader.hpp" />
     <ClInclude Include="include\graphics\mesh.hpp" />
-    <ClInclude Include="include\graphics\texture.hpp" />
     <ClInclude Include="include\types.hpp" />
     <ClInclude Include="include\audio\sound.hpp" />
     <ClInclude Include="include\audio\soundio_cpp.hpp" />

@@ -93,9 +93,6 @@
     <ClInclude Include="include\graphics\mesh.hpp">
       <Filter>Header Files\foton\graphics</Filter>
     </ClInclude>
-    <ClInclude Include="include\graphics\texture.hpp">
-      <Filter>Header Files\foton\graphics</Filter>
-    </ClInclude>
     <ClInclude Include="include\graphics\gl\gl_objects.hpp">
       <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
