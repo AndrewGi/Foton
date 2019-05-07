@@ -40,6 +40,9 @@
     <Filter Include="Header Files\foton\window">
       <UniqueIdentifier>{7e39013c-4ced-4473-8294-b1fb908b4cff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\foton\containers">
+      <UniqueIdentifier>{76e6df99-41c0-43c4-9243-9aae023bf7f1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">

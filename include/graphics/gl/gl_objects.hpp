@@ -66,23 +66,21 @@ namespace foton {
 				throw wrong_enum_error_t(type);
 			}
 		}
-		using mutex = thread_mutex_t;
-		using lock = std::unique_lock<mutex>;
 		namespace buffer_locks {
-			mutex vertex_attributes;
-			mutex atomic_counter;
-			mutex copy_read;
-			mutex dispatch_indirect;
-			mutex draw_indirect;
-			mutex element_array;
-			mutex pixel_pack;
-			mutex pixel_unpack;
-			mutex query;
-			mutex shader_storage;
-			mutex texture;
-			mutex transform_feedback;
-			mutex uniform;
-			mutex* get_mutex(GLenum buffer_enum) {
+			thread_mutex_t vertex_attributes;
+			thread_mutex_t atomic_counter;
+			thread_mutex_t copy_read;
+			thread_mutex_t dispatch_indirect;
+			thread_mutex_t draw_indirect;
+			thread_mutex_t element_array;
+			thread_mutex_t pixel_pack;
+			thread_mutex_t pixel_unpack;
+			thread_mutex_t query;
+			thread_mutex_t shader_storage;
+			thread_mutex_t texture;
+			thread_mutex_t transform_feedback;
+			thread_mutex_t uniform;
+			thread_mutex_t* get_mutex(GLenum buffer_enum) {
 				switch (buffer_enum) {
 				case GL_ARRAY_BUFFER:
 					return &vertex_attributes;
@@ -120,9 +118,9 @@ namespace foton {
 			struct buffer_bind_t {
 				template<class T>
 				struct map_t {
-					static mutex _map_buffer_mutex;
+					static thread_mutex_t _map_buffer_mutex;
 					const GLenum target;
-					lock map_buffer_lock;
+					std::unique_lock<thread_mutex_t> map_buffer_lock;
 					T* ptr = nullptr;
 					map_t(GLenum target, GLenum access) : target(target), map_buffer_lock(_map_buffer_mutex) {
 						ptr = glMapBuffer(target, access);
@@ -143,7 +141,7 @@ namespace foton {
 						return ptr;
 					}
 				};
-				buffer_bind_t(GLuint buffer_id, GLenum target, mutex& mutex, GLsizei& parent_size) : buffer_id(buffer_id), target(target), _lock(mutex), parent_size(parent_size) {
+				buffer_bind_t(GLuint buffer_id, GLenum target, thread_mutex_t& mutex, GLsizei& parent_size) : buffer_id(buffer_id), target(target), _lock(mutex), parent_size(parent_size) {
 					glBindBuffer(target, buffer_id);
 				};
 				buffer_bind_t(const buffer_bind_t&) = delete;
@@ -166,7 +164,7 @@ namespace foton {
 				GLsizei& parent_size;
 				const GLenum target;
 			private:
-				lock _lock;
+				std::unique_lock<thread_mutex_t> _lock;
 			};
 			
 			buffer_t() : buffer_t(GL_ARRAY_BUFFER) {
@@ -220,7 +218,7 @@ namespace foton {
 			GLsizei _size = 0;
 			GLuint _buffer_id = 0;
 			GLenum _target = 0;
-			mutex* _target_mutex = nullptr;
+			thread_mutex_t* _target_mutex = nullptr;
 		};
 		template<class T>
 		struct vbo_t : buffer_t {
@@ -233,7 +231,7 @@ namespace foton {
 			static constexpr std::pair<GLenum, GLint> gl_type_pair() {
 				return T_gl_type<T>();
 			}
-			void upload(const T* data, GLsizei count, GLenum usage = mevb) {
+			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
 				bind().upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
 			}
 			vbo_t() : buffer_t(GL_ARRAY_BUFFER) {
@@ -262,14 +260,19 @@ namespace foton {
 
 			};
 			template<class T>
-			struct vertex_attribute_t : vbo_t<T>, vertex_attribute_location_t {
-				vertex_attribute_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
+			struct vertex_attribute_buffer_object_t : vbo_t<T>, vertex_attribute_location_t {
+				vertex_attribute_buffer_object_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
 					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t(location) {
 					gl_type_info = vbo_t<T>::gl_type_pair();
 				}
 			};
+			template<class T>
+			struct vertex attribute_element_object_t : ebo_t<T>, vertex_attribute_lock_t {
+
+			}
+
 			struct vao_bind_t {
-				static mutex _mutex;
+				static thread_mutex_t _mutex;
 				vao_bind_t(GLuint id, vao_t& parent) : _id(id), _lock(_mutex), _parent(parent) {
 					glBindVertexArray(id);
 				}
@@ -284,7 +287,7 @@ namespace foton {
 					return _id;
 				}
 				template<class T>
-				void assign_vertex_attribute(vertex_attribute_t<T>& va) {
+				void assign_vertex_attribute(vertex_attribute_buffer_object_t<T>& va) {
 					auto bind = va.bind();
 					uint64_t offset = va.offset;
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
@@ -294,21 +297,24 @@ namespace foton {
 				}
 
 				template<class T, class... Args>
-				vertex_attribute_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, GLuint offset, Args&&... vbo_args) {
+				vertex_attribute_buffer_object_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, GLuint offset, Args&&... vbo_args) {
 					{
-						vertex_attribute_t<T> va = { {vbo_t<T>(std::forward<Args>(vbo_args)...)}, {index, stride, offset } };
-						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(vertex_attribute_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
+						vertex_attribute_buffer_object_t<T> va = { {vbo_t<T>(std::forward<Args>(vbo_args)...)}, {index, stride, offset } };
+						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(vertex_attribute_buffer_object_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
 						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
 						_parent._buffers.emplace_back(std::move(location));
 
 					} //vbo is no longer valid
-					vertex_attribute_t<T>& va = *reinterpret_cast<vertex_attribute_t<T>*>(&*(_parent._buffers.end() - 1));
+					vertex_attribute_buffer_object_t<T>& va = *reinterpret_cast<vertex_attribute_buffer_object_t<T>*>(&*(_parent._buffers.end() - 1));
 					assign_vertex_attribute(va);
 					return va;
 				}
+				template<class T> vertex emplace_ebo() {
+
+				}
 				vao_t& _parent;
 				GLuint _id;
-				lock _lock;
+				std::unique_lock<thread_mutex_t> _lock;
 			};
 
 			vao_bind_t bind() {
@@ -344,11 +350,20 @@ namespace foton {
 					_parent.width() = width;
 					_parent.height() = height;
 				}
-			private:
+			protected:
+				texture_bind_t(texture_t& parent, std::unique_lock<thread_mutex_t> lock) :
+					_parent(parent), _lock(std::move(lock)) {
+					if constexpr (_DEBUG) {
+						if (lock.mutex != &_mutex)
+							throw gl_error_t(0, "texture bind created from invalid mutex");
+					}
+				}
+
 				static constexpr GLenum _target = GL_TEXTURE_2D;
 				texture_t& _parent;
 				std::unique_lock<foton::thread_mutex_t> _lock;
 				static foton::thread_mutex_t _mutex;
+				friend texture_t;
 			};
 			GLuint& width() {
 				return _width;
@@ -365,11 +380,23 @@ namespace foton {
 			bool valid() const {
 				return _id != 0;
 			}
+			texture_bind_t activate(GLsizei texture_unit) {
+				auto lock = activate_texture_unit(texture_unit);
+				glBindTexture(GL_TEXTURE_2D, _id);
+				return texture_bind_t(*this, std::move(lock));
+			}
 			~texture_t() {
 				if (valid()) {
 					glDeleteTextures(1, &_id);
 					_id = 0;
 				}
+			}
+			static std::unique_lock<thread_mutex_t> activate_texture_unit(GLsizei texture_unit) {
+				if (texture_unit > 32)
+					throw gl_error_t(texture_unit, "texture_unit too high");
+				auto lock = std::unique_lock<foton::thread_mutex_t>(texture_bind_t::_mutex);
+				glActiveTexture(GL_TEXTURE + texture_unit);
+				return lock;
 			}
 		private:
 			GLuint _id = 0;
@@ -378,5 +405,5 @@ namespace foton {
 		};
 	}
 }
-std::mutex foton::GL::vao_t::vao_bind_t::_mutex = {};
+foton::thread_mutex_t foton::GL::vao_t::vao_bind_t::_mutex = {};
 foton::thread_mutex_t foton::GL::texture_t::texture_bind_t::_mutex = {};
