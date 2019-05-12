@@ -37,11 +37,11 @@ namespace foton {
 				model.normals.push_back(normals[v.normals_i]);
 				return static_cast<index_t>(model.vertices.size() - 1);
 			}
-			index_t find_similar_vertex(model_t& model, vec3f coords, vec2f texture_coords, vec3f normals) {
+			index_t find_similar_vertex(model_t& model, vec3f vertex, vec2f uv, vec3f normal) {
 				for (index_t i = 0; i < model.vertices.size(); i++) {
-					if (model.vertices[i] == coords
-						&& model.texture_coords[i] == texture_coords
-						&& model.normals[i] == normals)
+					if (model.vertices[i] == vertex
+						&& model.texture_coords[i] == uv
+						&& model.normals[i] == normal)
 						return i;
 				}
 				return INVALID_INDEX;

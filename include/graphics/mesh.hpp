@@ -1,9 +1,8 @@
 #pragma once
 #include <vector>
-#include "texture.hpp"
 #include "gl/gl_objects.hpp"
 namespace foton {
-	struct mesh_t {
+	struct mesh_t : drawer_t {
 		using index_t = uint32_t;
 		std::vector<vertex_t> vertices;
 		std::vector<index_t> indices;
@@ -14,17 +13,16 @@ namespace foton {
 			if (!textures.empty()) {
 				std::for_each_n(textures.begin(), textures.end(),
 					[](GL::texture_t texture, GLsizei index) {
-					texture.activate(index);
+					texture.activate(index).dont_unbind();
 				});
-				GL::texture_t::activate_texture_unit(0);
+				GL::texture_t::texture_bind_t::activate_unit(0);
 			}
 		}
 	private:
-		void enable_normals() {
-
-		}
 		void draw_visable(const drawer_context_t& context) override {
+			(void)context;
 			activate_textures();
+			vao.bind();
 
 		}
 	};

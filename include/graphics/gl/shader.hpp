@@ -18,7 +18,6 @@ namespace foton {
 			file_not_found_error_t(const filesystem::path& path) : std::runtime_error(path.string()) {}
 			file_not_found_error_t(const char* msg) : std::runtime_error(msg) {}
 		};
-
 		struct uniform_location_t {
 			//TODO: all the other glUniform functions
 			//TODO: update on reload
@@ -143,16 +142,17 @@ namespace foton {
 
 			struct shader_bind_t {
 				const GLuint program = 0;
-				shader_bind_t(GLuint program) : program(program), lock(_master_shader_mutex) {
+				_Acquires_lock_(_master_shader_mutex) shader_bind_t(GLuint program) : program(program), lock(_master_shader_mutex) {
 					glUseProgram(program);
 				}
 				shader_bind_t(const shader_bind_t&) = delete;
-				shader_bind_t(shader_bind_t&& other) : program(other.program), lock(std::move(other.lock)) {
+				shader_bind_t(shader_bind_t&& other) noexcept : program(other.program), lock(std::move(other.lock)) {
 					//TODO: update thread_id in mutex??
 				}
 				void unuse() {
 					if (lock.owns_lock()) {
 						glUseProgram(0);
+						lock.release();
 					}
 				}
 				~shader_bind_t() {
@@ -185,8 +185,13 @@ namespace foton {
 				glCompileShader(shader);
 				GLint success = 0;
 				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-				if (!success)
-					throw shader_error_t(std::string("shader compile failed for ")+guess_shader(which_shader));
+				if (!success) {
+					char compile_log_output[512];
+					GLsizei length = 0;
+					glGetShaderInfoLog(shader, sizeof(compile_log_output), &length, compile_log_output);
+					std::string output_message("shader error:\n" + std::string(compile_log_output, length));
+					throw shader_error_t(std::move(output_message));
+				}
 				return shader;
 			}
 

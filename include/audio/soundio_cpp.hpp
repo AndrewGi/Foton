@@ -59,7 +59,7 @@ namespace foton {
 					size_t write(const sample_t* samples, size_t amount) {
 						while (amount > 0 && samples_left > 0) {
 							*reinterpret_cast<sample_t*>(area->ptr) = *samples;
-							*area->ptr += area->step;
+							area->ptr += area->step;
 							samples_left--;
 							amount--;
 						}
@@ -125,6 +125,7 @@ namespace foton {
 				size_t(*user_size_hint_callback)(out_stream_t& stream, size_t max_samples);
 			private:
 				static void _write_callback(SoundIoOutStream* out_stream, int frame_count_min, int frame_count_max) {
+					(void)frame_count_min;
 					out_stream_t& self = *static_cast<out_stream_t*>(out_stream->userdata);
 					if (self.user_write_callback == nullptr)
 						return;

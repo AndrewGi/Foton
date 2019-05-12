@@ -16,7 +16,6 @@ namespace foton {
 				auto err = glGetError();
 				if (err != GL_NO_ERROR) {
 					throw gl_error_t(err, message);
-					check_gl_errors("multiple errors");
 				}
 			} 
 		}
@@ -221,7 +220,11 @@ namespace foton {
 			thread_mutex_t* _target_mutex = nullptr;
 		};
 		template<class T>
-		struct vbo_t : buffer_t {
+		struct typed_buffer_t : buffer_t {
+			typed_buffer_t(GLenum target) : buffer_t(target) {}
+			typed_buffer_t(GLenum target, const T* data, GLsizei count, GLenum usage) : typed_buffer_t(target) {
+				upload(data, count, usage);
+			}
 			static constexpr GLint amount_per_element() {
 				return std::get<1>(gl_type_pair());
 			}
@@ -231,29 +234,37 @@ namespace foton {
 			static constexpr std::pair<GLenum, GLint> gl_type_pair() {
 				return T_gl_type<T>();
 			}
+			static constexpr size_t bytes_per_element() {
+				return sizeof(T) * amount_per_element();
+			}
+			size_t count() const {
+				return size() / bytes_per_element();
+			}
 			void upload(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) {
-				bind().upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T)*count, usage);
+				bind().upload_data(reinterpret_cast<const uint8_t*>(data), sizeof(T) * count, usage);
 			}
-			vbo_t() : buffer_t(GL_ARRAY_BUFFER) {
+		private:
+
+		};
+		template<class T>
+		struct vbo_t : typed_buffer_t<T> {
+			vbo_t() : typed_buffer_t<T>(GL_ARRAY_BUFFER) {
 			}
-			vbo_t(const T* data, GLsizei count, GLenum usage) : vbo_t() {
-				upload(data, count, usage);
+			vbo_t(const T* data, GLsizei count, GLenum usage = GL_STATIC_DRAW) : vbo_t() {
+				typed_buffer_t<T>::upload(data, count, usage);
 			}
 			vbo_t(std::initializer_list<T> list, GLenum usage = GL_STATIC_DRAW) : vbo_t() {
 				std::vector<T> buffer(list);
-				upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
+				typed_buffer_t<T>::upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
 			
-		};
-		struct ebo_t : buffer_t {
-
 		};
 		static_assert(sizeof(buffer_t) == sizeof(vbo_t<float>));
 		struct vao_t {
 			struct vertex_attribute_location_t {
-				GLuint offset;
-				GLuint index;
-				GLuint stride;
+				const GLuint offset;
+				const GLuint index;
+				const GLuint stride;
 				std::pair<GLenum, GLuint> gl_type_info;
 			};
 			struct vertex_attribute_storage_location_t : buffer_t, vertex_attribute_location_t {
@@ -262,14 +273,15 @@ namespace foton {
 			template<class T>
 			struct vertex_attribute_buffer_object_t : vbo_t<T>, vertex_attribute_location_t {
 				vertex_attribute_buffer_object_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
-					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t(location) {
-					gl_type_info = vbo_t<T>::gl_type_pair();
+					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t{
+					location.offset, location.index, location.stride, vbo_t<T>::gl_type_pair() } {
+
 				}
 			};
 			template<class T>
-			struct vertex attribute_element_object_t : ebo_t<T>, vertex_attribute_lock_t {
+			struct ebo_t : typed_buffer_t<T> {
 
-			}
+			};
 
 			struct vao_bind_t {
 				static thread_mutex_t _mutex;
@@ -281,18 +293,18 @@ namespace foton {
 					other._id = 0;
 				}
 				~vao_bind_t() {
-					glBindVertexArray(0); //Unbind itself (maybe not needed)
+					if (_id!=0 && _lock.owns_lock())
+						glBindVertexArray(0); //Unbind itself (maybe not needed)
 				}
 				operator GLuint() const {
 					return _id;
 				}
 				template<class T>
 				void assign_vertex_attribute(vertex_attribute_buffer_object_t<T>& va) {
-					auto bind = va.bind();
 					uint64_t offset = va.offset;
+					auto bind = va.bind();
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
 					glEnableVertexAttribArray(va.index);
-					GL_MAX_VERTEX_ATTRIBS;
 					check_gl_errors("after assigning vertex attribute");
 				}
 
@@ -309,8 +321,12 @@ namespace foton {
 					assign_vertex_attribute(va);
 					return va;
 				}
-				template<class T> vertex emplace_ebo() {
-
+				template<class T, class... Args> ebo_t<T>& emplace_ebo(Args&&... args) {
+					ebo_t<T> ebo = { std::forward<Args>(args)... };
+					static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(ebo_t<T>), "ebo types need to be same size/layout so we can reinterupt_cast");
+					vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&ebo);
+					_parent._buffers.emplace_back(std::move(location));
+					return *reinterpret_cast<ebo_t<T>*>(&*(_parent._buffers.end() - 1));
 				}
 				vao_t& _parent;
 				GLuint _id;
@@ -332,35 +348,41 @@ namespace foton {
 		struct texture_t {
 			struct texture_bind_t {
 
-				texture_bind_t(texture_t& parent) : _parent(parent), _lock(_mutex) {
-					glBindTexture(_target, _parent._id);
-				}
-				bool valid() const {
-					return _lock.owns_lock();
-				}
-				~texture_bind_t() {
-					if (valid())
-						glBindTexture(_target, 0);
+				static void activate_unit(GLsizei unit) {
+					glActiveTexture(GL_TEXTURE0 + unit);
 				}
 				texture_t& parent() {
-					return _parent;
+					return *_parent;
+				}
+				texture_bind_t(texture_t& parent) : _parent(&parent), _lock(_mutex) {
+					glBindTexture(_target, parent._id);
+				}
+				bool valid() const {
+					return _parent!=nullptr && _lock.owns_lock();
+				}
+				~texture_bind_t() {
+					if (_parent!=nullptr && valid())
+						glBindTexture(_target, 0);
+				}
+				void dont_unbind() {
+					_parent = nullptr;
 				}
 				void upload(const byte_t* pixels, GLsizei width, GLsizei height, GLint internal_format = GL_RGB, GLint format = GL_RGB, GLenum type = GL_FLOAT) {
 					glTexImage2D(_target, 0, internal_format, width, height, 0, format, type, pixels);
-					_parent.width() = width;
-					_parent.height() = height;
+					parent().width() = width;
+					parent().height() = height;
 				}
 			protected:
 				texture_bind_t(texture_t& parent, std::unique_lock<thread_mutex_t> lock) :
-					_parent(parent), _lock(std::move(lock)) {
+					_parent(&parent), _lock(std::move(lock)) {
 					if constexpr (_DEBUG) {
-						if (lock.mutex != &_mutex)
+						if (lock.mutex() != &_mutex && lock)
 							throw gl_error_t(0, "texture bind created from invalid mutex");
 					}
 				}
 
 				static constexpr GLenum _target = GL_TEXTURE_2D;
-				texture_t& _parent;
+				texture_t* _parent;
 				std::unique_lock<foton::thread_mutex_t> _lock;
 				static foton::thread_mutex_t _mutex;
 				friend texture_t;
@@ -380,8 +402,12 @@ namespace foton {
 			bool valid() const {
 				return _id != 0;
 			}
+
 			texture_bind_t activate(GLsizei texture_unit) {
-				auto lock = activate_texture_unit(texture_unit);
+				if (texture_unit > 32)
+					throw gl_error_t(texture_unit, "texture_unit too high");
+				auto lock = std::unique_lock<foton::thread_mutex_t>(texture_bind_t::_mutex);
+				glActiveTexture(GL_TEXTURE + texture_unit);
 				glBindTexture(GL_TEXTURE_2D, _id);
 				return texture_bind_t(*this, std::move(lock));
 			}
@@ -390,13 +416,6 @@ namespace foton {
 					glDeleteTextures(1, &_id);
 					_id = 0;
 				}
-			}
-			static std::unique_lock<thread_mutex_t> activate_texture_unit(GLsizei texture_unit) {
-				if (texture_unit > 32)
-					throw gl_error_t(texture_unit, "texture_unit too high");
-				auto lock = std::unique_lock<foton::thread_mutex_t>(texture_bind_t::_mutex);
-				glActiveTexture(GL_TEXTURE + texture_unit);
-				return lock;
 			}
 		private:
 			GLuint _id = 0;

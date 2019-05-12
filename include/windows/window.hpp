@@ -54,7 +54,7 @@ namespace foton {
 				self._width = width;
 				self._height = height;				
 			});
-			glfwSetWindowRefreshCallback(_glfw_window, [](GLFWwindow* window) {
+			glfwSetWindowRefreshCallback(_glfw_window, [](GLFWwindow*) {
 				//static_cast<window_t*>(glfwGetWindowUserPointer(window))->render();
 			});
 			if (!_glfw_window) { //couldn't create a window for some reason
@@ -158,6 +158,7 @@ namespace foton {
 			}
 		}
 		static void _glfw_on_key_cb(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
+			(void)scancode;
 			window_t& window = *static_cast<window_t*>(glfwGetWindowUserPointer(glfw_window));
 			if(window._on_key_cb)
 				window._on_key_cb(window, key, action, mods);

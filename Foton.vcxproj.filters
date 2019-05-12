@@ -41,7 +41,7 @@
       <UniqueIdentifier>{7e39013c-4ced-4473-8294-b1fb908b4cff}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\foton\containers">
-      <UniqueIdentifier>{76e6df99-41c0-43c4-9243-9aae023bf7f1}</UniqueIdentifier>
+      <UniqueIdentifier>{9c6b5d86-3ac3-4ba2-9e65-c6f52413bb43}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -98,6 +98,12 @@
     </ClInclude>
     <ClInclude Include="include\graphics\gl\gl_objects.hpp">
       <Filter>Header Files\foton\graphics\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="include\template_tools.h">
+      <Filter>Header Files\foton</Filter>
+    </ClInclude>
+    <ClInclude Include="include\containers\static_vector.hpp">
+      <Filter>Header Files\foton\containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

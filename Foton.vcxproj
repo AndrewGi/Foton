@@ -169,13 +169,15 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindows10|x64'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>SOUNDIO_STATIC_LIBRARY;_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING;_SILENCE_CXX17_NEGATORS_DEPRECATION_WARNING;GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -228,6 +230,7 @@
     <ClInclude Include="include\graphics\gl\gl_objects.hpp" />
     <ClInclude Include="include\graphics\gl\shader.hpp" />
     <ClInclude Include="include\graphics\mesh.hpp" />
+    <ClInclude Include="include\template_tools.h" />
     <ClInclude Include="include\types.hpp" />
     <ClInclude Include="include\audio\sound.hpp" />
     <ClInclude Include="include\audio\soundio_cpp.hpp" />
@@ -244,6 +247,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Foton.cpp" />
+    <ClInclude Include="include\containers\static_vector.hpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugWindows10|Win32'">Create</PrecompiledHeader>

@@ -3,11 +3,10 @@
 
 #include "pch.h"
 #include "windows/window.hpp"
-
-static_assert(sizeof(foton::vec3f) == sizeof(float) * 3);
 #include "2D.hpp"
 #include "graphics/gl/gl_objects.hpp"
 #include "graphics/gl/shader.hpp"
+#include "graphics/mesh.hpp"
 #include "model.hpp"
 #include "audio/sound.hpp"
 #define FOTON_MP3_SUPPORT
@@ -43,7 +42,7 @@ int main()
 	GL::check_gl_errors("before vao");
 	foton::GL::vao_t vao;
 	vao.bind().emplace_vertex_attribute<vec3f>(0, 0, 0, std::initializer_list<vec3f>{ {-.75,-.75, 0 }, {0, .75, 0}, {.75, -.75, .75} });
-
+	foton::
 
 	audio::initalize();
 	std::cout << "Output devices:\n";
@@ -55,6 +54,8 @@ int main()
 	auto last_shader_reload_time = current_time();
 
 	main_window.set_key_callback([&] (window_t& window, window_t::keyboard_key_t key, window_t::keyboard_action_t action, window_t::keyboard_mods_t mods){
+		(void)window;
+		(void)mods;
 		if (key == GLFW_KEY_R && action == GLFW_PRESS) {
 			if (last_shader_reload_time + 500ms > current_time()) //Timeout on shader creation
 				return;

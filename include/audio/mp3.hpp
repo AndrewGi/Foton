@@ -80,8 +80,9 @@ namespace foton {
 					open(path);
 			}
 			mp3_t(out_stream_t out_stream) : mp3_t(std::move(out_stream), {}) {}
-			void open(const std::filesystem::path& path) {
-				this->path = path;
+			void open(const std::filesystem::path& open_path) {
+				if (&path != &open_path)
+					path = open_path;
 				mpg123().open(path.string().c_str());
 			}
 			void close() {

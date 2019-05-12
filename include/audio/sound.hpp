@@ -105,7 +105,6 @@ namespace foton {
 			}
 			static size_t _stream_size_hint(soundio::out_stream_t& stream, size_t max_samples) {
 				player_t& player = *static_cast<player_t*>(stream.user_data);
-				size_t size = player.generator->size_hint(max_samples);
 				return player.generator->size_hint(max_samples);
 			}
 		};
