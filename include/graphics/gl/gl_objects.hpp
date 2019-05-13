@@ -266,6 +266,7 @@ namespace foton {
 				const GLuint index;
 				const GLuint stride;
 				std::pair<GLenum, GLuint> gl_type_info;
+				static_assert(std::is_trivial_v<vertex_attribute_location_t>);
 			};
 			struct vertex_attribute_storage_location_t : buffer_t, vertex_attribute_location_t {
 
@@ -277,6 +278,9 @@ namespace foton {
 					location.offset, location.index, location.stride, vbo_t<T>::gl_type_pair() } {
 
 				}
+			};
+			struct _ebo_padding_t {
+				uint8_t _padding[sizeof(vertex_attribute_location_t)];
 			};
 			template<class T>
 			struct ebo_t : typed_buffer_t<T> {
