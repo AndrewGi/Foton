@@ -4,6 +4,7 @@
 #include "../drawer.hpp"
 #include "glew/glew.h"
 #include <vector>
+#include <variant>
 namespace foton {
 	namespace GL {
 		struct gl_error_t : std::runtime_error {
@@ -268,23 +269,31 @@ namespace foton {
 				std::pair<GLenum, GLuint> gl_type_info;
 				static_assert(std::is_trivial_v<vertex_attribute_location_t>);
 			};
-			struct vertex_attribute_storage_location_t : buffer_t, vertex_attribute_location_t {
+			struct ebo_info_t {
+
+			};
+			union vao_buffer_info_t {
+				union {
+					ebo_info_t ebo;
+					vertex_attribute_location_t vertex_attribute;
+				} info;
+			};
+			template<class T>
+			struct vao_buffer_t : typed_buffer_t<T>, vao_buffer_info_t {
 
 			};
 			template<class T>
-			struct vertex_attribute_buffer_object_t : vbo_t<T>, vertex_attribute_location_t {
+			struct vertex_attribute_buffer_object_t : vao_buffer_t<T>  {
 				vertex_attribute_buffer_object_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
-					: vbo_t<T>(std::move(vbo)), vertex_attribute_location_t{
-					location.offset, location.index, location.stride, vbo_t<T>::gl_type_pair() } {
+					: vao_buffer_t<T>{vbo_t<T>(std::move(vbo)), vertex_attribute_location_t{
+					location.offset, location.index, location.stride, vbo_t<T>::gl_type_pair() }} {
 
 				}
 			};
-			struct _ebo_padding_t {
-				uint8_t _padding[sizeof(vertex_attribute_location_t)];
-			};
-			template<class T>
-			struct ebo_t : typed_buffer_t<T> {
 
+			template<class T>
+			struct ebo_t : typed_buffer_t<T>, vao_buffer_info_t {
+				static_assert(sizeof(ebo_t<float>) == sizeof(vertex_attribute_storage_location_t));
 			};
 
 			struct vao_bind_t {
@@ -325,11 +334,13 @@ namespace foton {
 					assign_vertex_attribute(va);
 					return va;
 				}
-				template<class T, class... Args> ebo_t<T>& emplace_ebo(Args&&... args) {
-					ebo_t<T> ebo = { std::forward<Args>(args)... };
-					static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(ebo_t<T>), "ebo types need to be same size/layout so we can reinterupt_cast");
-					vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&ebo);
-					_parent._buffers.emplace_back(std::move(location));
+				template<class T, class... Args> ebo_t<T>& emplace_ebo(Args&& ... args) {
+					{
+						ebo_t<T> ebo = { std::forward<Args>(args)..., {} };
+						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(ebo_t<T>), "ebo types need to be same size/layout so we can reinterupt_cast");
+						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&ebo);
+						_parent._buffers.emplace_back(std::move(location));
+					}
 					return *reinterpret_cast<ebo_t<T>*>(&*(_parent._buffers.end() - 1));
 				}
 				vao_t& _parent;
@@ -343,11 +354,114 @@ namespace foton {
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
+			void draw_call() {
+
+			}
 		private:
-			std::vector<vertex_attribute_storage_location_t> _buffers;
+			std::vector<vao> _buffers;
 			GLuint _id;
 			GLenum _draw_shapes = GL_TRIANGLES;
 			
+			
+		};
+
+		struct rbo_t {
+			struct rbo_bind_t {
+				rbo_bind_t(rbo_t& parent) : _parent(&parent), _lock(_mutex) {
+					glBindRenderbuffer(_target, parent.id());
+				}
+				rbo_bind_t(rbo_bind_t&& other) : _parent(other._parent), _lock(std::move(other._lock)) {
+					other._parent = nullptr;
+				}
+				bool valid() {
+					return parent().id() != 0 && _lock.owns_lock();
+				}
+				void set_storage(GLsizei width, GLsizei height) {
+					glRenderbufferStorage(_target, _internal_format, width, height);
+				}
+				rbo_t& parent() {
+					return *_parent;
+				}
+				static constexpr GLenum internal_format() {
+					return _internal_format;
+				}
+				~rbo_bind_t() {
+					if (valid())
+						glBindRenderbuffer(_target, 0);
+				}
+			private:
+				rbo_t* _parent;
+				std::unique_lock<thread_mutex_t> _lock;
+				static constexpr GLuint _target = GL_RENDERBUFFER;
+				static constexpr GLenum _internal_format = GL_DEPTH24_STENCIL8;
+			};
+			rbo_t() {
+				glGenRenderbuffers(1, &_id);
+			}
+			~rbo_t() {
+				if (_id != 0)
+					glDeleteRenderbuffers(1, &_id);
+			}
+			rbo_bind_t bind() {
+				return rbo_bind_t(*this);
+			}
+			GLuint id() const {
+				return _id;
+			}
+		private:
+			GLuint _id;
+			static thread_mutex_t _mutex;
+		};
+		struct fbo_t {
+			struct fbo_bind_t {
+				fbo_bind_t(fbo_t& parent) : _parent(&parent), _lock(_mutex) {
+					glBindFramebuffer(_target, parent.id());
+				}
+				bool valid() {
+					return parent().id() != 0 && _lock.owns_lock();
+				}
+				GLenum status() {
+					if (valid())
+						return glCheckFramebufferStatus(_target);
+					else
+						return GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT;
+				}
+				bool done() {
+					return status() == GL_FRAMEBUFFER_COMPLETE;
+				}
+				fbo_t& parent() {
+					return *_parent;
+				}
+				rbo_t::rbo_bind_t bind_to_rbo(rbo_t& rbo, GLenum attachment=GL_DEPTH_STENCIL_ATTACHMENT) {
+					return bind_to_rbo(rbo.bind(), attachment);
+				}
+				rbo_t::rbo_bind_t bind_to_rbo(rbo_t::rbo_bind_t r_bind, GLenum attachment=GL_DEPTH_STENCIL_ATTACHMENT) {
+					glFramebufferRenderbuffer(_target, attachment, r_bind.internal_format(), r_bind.parent().id());
+					return std::move(r_bind);
+				}
+				
+				~fbo_bind_t() {
+					if (valid())
+						glBindFramebuffer(_target, 0);
+				}
+			private:
+				fbo_t* _parent;
+				std::unique_lock<thread_mutex_t> _lock;
+				static constexpr GLuint _target = GL_FRAMEBUFFER;
+			};
+			fbo_t() {
+				glGenFramebuffers(1, &_id);
+			}
+			~fbo_t() {
+				if (_id != 0)
+					glDeleteFramebuffers(1, &_id);
+			}
+			GLuint id() const {
+				return _id;
+			}
+		private:
+			GLuint _id;
+			static thread_mutex_t _mutex;
 		};
 		struct texture_t {
 			struct texture_bind_t {

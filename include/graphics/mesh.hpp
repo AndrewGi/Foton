@@ -2,7 +2,7 @@
 #include <vector>
 #include "gl/gl_objects.hpp"
 namespace foton {
-	struct mesh_t : drawer_t {
+	struct mesh_t {
 		using index_t = uint32_t;
 		std::vector<vertex_t> vertices;
 		std::vector<index_t> indices;
@@ -19,10 +19,10 @@ namespace foton {
 			}
 		}
 	private:
-		void draw_visable(const drawer_context_t& context) override {
-			(void)context;
+		void draw_call() override {
+			auto b = vao.bind();
 			activate_textures();
-			vao.bind();
+			vao.draw_call();
 
 		}
 	};

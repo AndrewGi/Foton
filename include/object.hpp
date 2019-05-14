@@ -21,26 +21,23 @@ namespace foton {
 		};
 		using mat4f = Eigen::Matrix4f;
 		std::vector<model::model_t> models;
-		std::vector<drawer_t*> _drawers;
 		std::unique_ptr<optional_shader_t> default_shader = nullptr;
 		vec3f position;
 		quatf rotation;
-		void draw_visable(const mat4f& transformation) override {
-			mat4f mat = transformation * object_mat();
-			for (drawer_t* drawer : _drawers) {
-				if (default_shader) {
-					if (auto * shader_drawer = dynamic_cast<shader::shader_t::shader_drawer_t*>(drawer)) {
-						drawer->draw(mat);
-					}
-					else {
-						auto use = default_shader->shader.use();
-						default_shader->transform_uniform = mat;
-						drawer->draw(mat);
-					}
+		void draw_visable(const drawer_context_t& context) override {
+			drawer_context_t new_context = context.apply(object_mat());
+			auto draw_all = [&]() {
+				for (model::model_t& model : models) {
+					model.draw_call();
 				}
-				else {
-					drawer->draw(mat);
-				}
+			};
+			if (default_shader) {
+				auto use = default_shader->shader.use();
+				default_shader->get_transform_uniform() = new_context.world_matrix;
+				draw_all();
+			}
+			else {
+				draw_all();
 			}
 		}
 		void set_shader(shader::shader_t&& shader) {

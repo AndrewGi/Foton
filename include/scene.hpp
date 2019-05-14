@@ -4,7 +4,7 @@
 #include "graphics/gl/shader.hpp"
 namespace foton {
 	namespace scene {
-		struct scene_t : object_t {
+		struct scene_t : drawer_t {
 			std::vector<object_t*> objects;
 			void draw_with(const camera::camera_t& camera) {
 				camera.recalculate();
