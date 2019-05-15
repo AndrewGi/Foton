@@ -272,15 +272,19 @@ namespace foton {
 			struct ebo_info_t {
 
 			};
-			union vao_buffer_info_t {
+			struct vao_buffer_info_t {
 				union {
 					ebo_info_t ebo;
 					vertex_attribute_location_t vertex_attribute;
 				} info;
 			};
+			
+			struct vao_any_buffer_t : buffer_t, vao_buffer_info_t {
+
+			};
 			template<class T>
 			struct vao_buffer_t : typed_buffer_t<T>, vao_buffer_info_t {
-
+				static_assert(sizeof(*this) == sizeof(vao_any_buffer_t));
 			};
 			template<class T>
 			struct vertex_attribute_buffer_object_t : vao_buffer_t<T>  {
