@@ -44,9 +44,12 @@ namespace foton {
 		fps_counter_t fps_counter;
 		window_t(const char* title, int width, int height) : _width(width), _height(height) {
 			static std::once_flag glfw_init_flag; //will only call glfwInit once during the duration of the program
-			static std::once_flag glew_init_flag; //will only call glfwInit once during the duration of the program
+			static std::once_flag glew_init_flag; //will only call glewInit once during the duration of the program
 			std::call_once(glfw_init_flag, init_glfw); //this line does nothing if glfw_init_flag was called
 			_glfw_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+			glfwSetErrorCallback([](int error_code, const char* desc) {
+				std::cerr << "glfw error (" << error_code << ") : " << desc << '\n';
+				});
 			glfwSetKeyCallback(_glfw_window, _glfw_on_key_cb);
 			glfwSetWindowFocusCallback(_glfw_window, _glfw_on_focus_cb);
 			glfwSetWindowSizeCallback(_glfw_window, [](GLFWwindow* window, int width, int height) {

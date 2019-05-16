@@ -284,7 +284,7 @@ namespace foton {
 			};
 			template<class T>
 			struct vao_buffer_t : typed_buffer_t<T>, vao_buffer_info_t {
-				static_assert(sizeof(*this) == sizeof(vao_any_buffer_t));
+				static_assert(sizeof(vao_buffer_t<T>) == sizeof(vao_any_buffer_t));
 			};
 			template<class T>
 			struct vertex_attribute_buffer_object_t : vao_buffer_t<T>  {
@@ -297,7 +297,7 @@ namespace foton {
 
 			template<class T>
 			struct ebo_t : typed_buffer_t<T>, vao_buffer_info_t {
-				static_assert(sizeof(ebo_t<float>) == sizeof(vertex_attribute_storage_location_t));
+				static_assert(sizeof(ebo_t<float>) == sizeof(vao_any_buffer_t));
 			};
 
 			struct vao_bind_t {
@@ -362,7 +362,7 @@ namespace foton {
 
 			}
 		private:
-			std::vector<vao> _buffers;
+			std::vector<vao_any_buffer_t> _buffers;
 			GLuint _id;
 			GLenum _draw_shapes = GL_TRIANGLES;
 			
