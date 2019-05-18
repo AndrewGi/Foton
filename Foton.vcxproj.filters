@@ -105,6 +105,27 @@
     <ClInclude Include="include\containers\static_vector.hpp">
       <Filter>Header Files\foton\containers</Filter>
     </ClInclude>
+    <ClInclude Include="include\containers\atomic_queue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\buffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\vao.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\vbo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\containers\dynamic_vector.hpp">
+      <Filter>Header Files\foton\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\containers\helpers.hpp">
+      <Filter>Header Files\foton\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\containers\job_queue.hpp">
+      <Filter>Header Files\foton\containers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

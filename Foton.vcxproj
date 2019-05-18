@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="DebugWindows10|Win32">
@@ -226,9 +226,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\audio\mp3.hpp" />
+    <ClInclude Include="include\containers\atomic_queue.h" />
+    <ClInclude Include="include\containers\dynamic_vector.hpp" />
+    <ClInclude Include="include\containers\helpers.hpp" />
+    <ClInclude Include="include\containers\job_queue.hpp" />
     <ClInclude Include="include\graphics\drawer.hpp" />
+    <ClInclude Include="include\graphics\gl\buffer.hpp" />
     <ClInclude Include="include\graphics\gl\gl_objects.hpp" />
     <ClInclude Include="include\graphics\gl\shader.hpp" />
+    <ClInclude Include="include\graphics\gl\vao.hpp" />
+    <ClInclude Include="include\graphics\gl\vbo.hpp" />
     <ClInclude Include="include\graphics\mesh.hpp" />
     <ClInclude Include="include\template_tools.h" />
     <ClInclude Include="include\types.hpp" />
