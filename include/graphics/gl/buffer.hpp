@@ -1,15 +1,11 @@
 #pragma once
 #include "../../mutex.hpp"
+#include "../../exceptions.hpp"
 #include "glew/glew.h"
 #include <stdexcept>
 #include <string>
 namespace foton {
 	namespace GL {
-		struct gl_error_t : std::runtime_error {
-			gl_error_t(GLenum err, std::string msg) : std::runtime_error(std::string(
-				"glError: (") + std::to_string(err) + ") " + msg
-			) {}
-		};
 		void check_gl_errors(const char* message) {
 			if constexpr (_DEBUG) { //Should probably use a macro but this is cleaner for now
 				auto err = glGetError();
@@ -139,29 +135,34 @@ namespace foton {
 						return ptr;
 					}
 				};
-				buffer_bind_t(GLuint buffer_id, GLenum target, thread_mutex_t& mutex, GLsizei& parent_size) : buffer_id(buffer_id), target(target), _lock(mutex), parent_size(parent_size) {
-					glBindBuffer(target, buffer_id);
+
+				buffer_bind_t(buffer_t& parent) : _lock(*parent._target_mutex), _parent(&parent) {
+					glBindBuffer(target(), buffer_id());
 				};
 				buffer_bind_t(const buffer_bind_t&) = delete;
-				buffer_bind_t(buffer_bind_t&& other) : buffer_id(other.buffer_id), target(other.target), _lock(std::move(other._lock)), parent_size(other.parent_size) {
-					other.buffer_id = 0;
+				buffer_bind_t(buffer_bind_t&& other) : _lock(std::move(other._lock)), _parent(other._parent) {
+					other._parent = nullptr;
 				}
 				~buffer_bind_t() {
-					if (buffer_id > 0) {
-						glBindBuffer(target, 0); //unbind itself
+					if (buffer_id() > 0) {
+						glBindBuffer(target(), 0); //unbind itself
 					}
 				}
+				GLsizei buffer_id() const {
+					return _parent->buffer_id();
+				}
+				GLenum target() const {
+					return _parent->_target;
+				}
 				void upload_data(const byte_t* data, size_t size_in_bytes, GLenum usage = GL_STATIC_DRAW) {
-					glBufferData(target, size_in_bytes, data, usage);
-					parent_size = static_cast<GLsizei>(size_in_bytes);
+					glBufferData(_parent->_target, size_in_bytes, data, usage);
+					_parent->_size = static_cast<GLsizei>(size_in_bytes);
 				}
 				GLsizei size() const {
-					return parent_size;
+					return _parent->size;
 				}
-				GLuint buffer_id;
-				GLsizei& parent_size;
-				const GLenum target;
-			private:
+			protected:
+				buffer_t* _parent;
 				std::unique_lock<thread_mutex_t> _lock;
 			};
 
@@ -198,7 +199,7 @@ namespace foton {
 				_target = target;
 			}
 			buffer_bind_t bind() {
-				return buffer_bind_t(_buffer_id, _target, *_target_mutex, _size);
+				return buffer_bind_t(*this);
 			}
 			buffer_bind_t bind(GLenum target) {
 				set_target(target);
@@ -212,7 +213,7 @@ namespace foton {
 			const GLint size() const {
 				return _size;
 			}
-		private:
+		protected:
 			GLsizei _size = 0;
 			GLuint _buffer_id = 0;
 			GLenum _target = 0;

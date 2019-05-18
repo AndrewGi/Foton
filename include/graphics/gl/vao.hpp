@@ -1,18 +1,19 @@
 #pragma once
 #include "vbo.hpp"
+#include "../../containers/dynamic_vector.hpp"
 namespace foton::GL {
 		struct vao_t {
 			struct vertex_attribute_location_t {
 				const GLuint offset;
 				const GLuint index;
 				const GLuint stride;
-				std::pair<GLenum, GLuint> gl_type_info;
 				static_assert(std::is_trivial_v<vertex_attribute_location_t>);
 			};
 			struct ebo_info_t {
 
 			};
 			struct vao_buffer_info_t {
+				GLenum draw_mode;
 				union {
 					ebo_info_t ebo;
 					vertex_attribute_location_t vertex_attribute;
@@ -30,15 +31,31 @@ namespace foton::GL {
 			struct vertex_attribute_buffer_object_t : vao_buffer_t<T> {
 				vertex_attribute_buffer_object_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
 					: vao_buffer_t<T>{ vbo_t<T>(std::move(vbo)), vertex_attribute_location_t{
-					location.offset, location.index, location.stride, vbo_t<T>::gl_type_pair() } } {
+					location.offset, location.index, location.stride } } {
 
 				}
 			};
 
 			template<class T>
 			struct ebo_t : typed_buffer_t<T>, vao_buffer_info_t {
-				static_assert(sizeof(ebo_t<float>) == sizeof(vertex_attribute_storage_location_t));
+				struct ebo_bind_t : buffer_t::buffer_bind_t {
+					ebo_bind_t(buffer_t::buffer_bind_t&& b_bind)
+						: buffer_bind_t(std::move(b_bind)) {}
+					ebo_t& parent() {
+						return *static_cast<ebo_t*>(_parent);
+					}
+					void draw(GLsizei element_count, GLsizei offset = 0) {
+						if ((element_count + offset) > parent().count())
+							throw ("elements out of range");
+						glDrawElements(parent().draw_mode, element_count, typed_buffer_t<T>::gl_type(), (const void*)(offset));
+					}
+				};
+				
+				ebo_bind_t bind() {
+					return typed_buffer_t<T>::bind();
+				}
 			};
+			static_assert(sizeof(ebo_t<float>) == sizeof(vao_any_buffer_t));
 
 			struct vao_bind_t {
 				static thread_mutex_t _mutex;
@@ -98,11 +115,8 @@ namespace foton::GL {
 			vao_t() {
 				glGenVertexArrays(1, &_id);
 			}
-			void draw_call() {
-
-			}
 		private:
-			std::vector<vao> _buffers;
+			dynamic_vector_t<vao_any_buffer_t> _buffers;
 			GLuint _id;
 			GLenum _draw_shapes = GL_TRIANGLES;
 

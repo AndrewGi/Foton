@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
-#include <stdexcept>
 #include <algorithm>
 #include <shared_mutex>
+#include "../exceptions.hpp"
 
 namespace foton {
 	template<bool>

@@ -120,10 +120,6 @@ namespace foton {
 			auto cl = aquire_glfw_lock();
 			glClearColor(r, g, b, 1.0f);
 		}
-		void add_drawer(drawer_t* drawer_p) {
-			auto cl = aquire_glfw_lock(); //Don't want to add anything while we drawing
-			_drawers.push_back(drawer_p);
-		}
 		void render_with(const camera::camera_t& camera) {
 			camera.recalculate();
 			mat4f trans = camera.projection_matrix * camera.view_matrix;

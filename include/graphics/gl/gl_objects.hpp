@@ -186,5 +186,4 @@ namespace foton {
 		};
 	}
 }
-foton::thread_mutex_t foton::GL::vao_t::vao_bind_t::_mutex = {};
 foton::thread_mutex_t foton::GL::texture_t::texture_bind_t::_mutex = {};

@@ -3,10 +3,10 @@
 #include "dynamic_vector.hpp"
 namespace foton {
 	template<class T, bool use_mutex = false, class ContainerT = dynamic_vector_t<T, false>>
-	struct job_queue_t : _maybe_mutex_t<use_mutex> {
+	struct stack_t : _maybe_mutex_t<use_mutex> {
 		using index_t = ContainerT::index_t;
 	private:
-		static_assert(!ContainerT::uses_mutex(), "locking is handled by queue, not by ContainerT");
+		static_assert(!ContainerT::uses_mutex(), "locking is handled by stack, not by ContainerT");
 		ContainerT _container;
 	public:
 		ContainerT swap_container(ContainerT new_container) {
@@ -17,9 +17,19 @@ namespace foton {
 		ContainerT& container() {
 			return _container;
 		}
+		const ContainerT& container() const {
+			return _container;
+		}
+		bool empty() const {
+			return container().empty();
+		}
 		void push(T&& object) {
 			auto l = write_lock();
 			container().push_back(std::move(object));
+		}
+		T pop() {
+			auto l = write_lock();
+			return container().pop_back();
 		}
 		template<class... Args>
 		void emplace(Args&& ... args) {

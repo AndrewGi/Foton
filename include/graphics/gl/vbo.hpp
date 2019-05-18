@@ -13,7 +13,10 @@ namespace foton {
 				std::vector<T> buffer(list);
 				typed_buffer_t<T>::upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
-
+			void draw(GLsizei indicies_count, GLsizei offset = 0) const {
+				if ((indicies_count + offset) > count())
+					throw std::out_of_range("too many indicies");
+			}
 		};
 		static_assert(sizeof(buffer_t) == sizeof(vbo_t<float>));
 	}

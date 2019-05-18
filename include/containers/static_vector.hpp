@@ -1,5 +1,6 @@
 #pragma once
 #include "helpers.hpp"
+#include "../exceptions.hpp"
 namespace foton {
 	namespace {
 		template<bool>
@@ -23,17 +24,17 @@ namespace foton {
 			mutable std::shared_mutex _mutex;
 		};
 	}
-	template<class T, uint32_t _capacitity, bool _use_mutex=false, class Allocator = std::allocator<T>>
+	template<class T, uint32_t _capacitity, bool _use_mutex=false, class AllocatorT = std::allocator<T>>
 	struct static_vector_t : _maybe_mutex_t<_use_mutex> {
 		using index_t = uint32_t;
-		using alloc_traits = std::allocator_traits<Allocator>;
+		using alloc_traits = std::allocator_traits<AllocatorT>;
 		using pointer_t = alloc_traits::pointer;
 	private:
-		Allocator _allocator;
+		AllocatorT _allocator;
 		pointer_t _data;
 		index_t _size;
 	public:
-		static_vector_t(Allocator allocator)
+		static_vector_t(AllocatorT allocator)
 			: _allocator(std::move(allocator)), _data(alloc_traits::allocate(_allocator, capacitity())), _size(0) {
 		
 		}
@@ -56,7 +57,7 @@ namespace foton {
 		T& at(index_t index) {
 
 			if (index >= size())
-				throw std::out_of_range("static_vector at");
+				throw exceptions::out_of_range_t(out_of_range_t::over_or_under_t::overflow, index, size(), "static_vector at");
 			return data()[index];
 		}
 		T& operator[](index_t index) {
@@ -64,7 +65,7 @@ namespace foton {
 		}
 		const T& at(index_t index) const {
 			if (index >= size())
-				throw std::out_of_range("static_vector const at");
+				throw exceptions::out_of_range_t(out_of_range_t::over_or_under_t::overflow, index, size(), "static_vector const at");
 			return data()[index];
 		}
 		const T& operator[](index_t index) const {
@@ -78,7 +79,7 @@ namespace foton {
 		}
 		void check_empty() const {
 			if (empty())
-				throw std::out_of_range("static_vector empty");
+				exceptions::out_of_range_t(out_of_range_t::over_or_under_t::underflow, index, size(), "static_vector underflow");
 		}
 		T& first() {
 			check_empty();
@@ -92,7 +93,7 @@ namespace foton {
 		T& emplace_back(Args&& ... args) {
 			auto l = write_lock();
 			if (size() >= capacitity())
-				throw std::out_of_range("static_vector emplace_back");
+				throw exceptions::out_of_range_t(exceptions::out_of_range_t::over_or_under_t::overflow, size(), capacitity() "static_vector emplace_back");
 			T* ptr = &data()[size()];
 			alloc_traits::construct(_allocator, ptr, std::forward<Args>(args)...);
 			_size++;
@@ -102,7 +103,7 @@ namespace foton {
 		T& emplace(Args&& ... arg) {
 			auto l = write_lock();
 			if (size() >= capacitity())
-				throw std::out_of_range("static_vector emplace_back");
+				throw exceptions::out_of_range_t(exceptions::out_of_range_t::over_or_under_t::overflow, size(), capacitity(), "static_vector emplace_back");
 			alloc_traits::construct(_allocator, &data()[size()], std::forward<Args>(args)...);
 			_size++;
 			for (index_t i = size() - 1; i > 1; i--) {

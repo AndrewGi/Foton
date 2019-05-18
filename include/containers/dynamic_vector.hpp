@@ -2,28 +2,28 @@
 #include "helpers.hpp"
 
 namespace foton {
-	template<class T, bool _use_mutex = false, class Allocator = std::allocator<T>>
+	template<class T, bool _use_mutex = false, class AllocatorT = std::allocator<T>>
 	struct dynamic_vector_t : _maybe_mutex_t<_use_mutex> {
 		using index_t = uint32_t;
-		using alloc_traits = std::allocator_traits<Allocator>;
-		using pointer_t = alloc_traits::pointer;
+		using alloc_traits = std::allocator_traits<typename AllocatorT>;
+		using pointer_t = typename alloc_traits::pointer;
 		static constexpr index_t DEFAULT_CAPACITY = 8;
 	private:
-		Allocator _allocator = {};
+		AllocatorT _allocator = {};
 		pointer_t _data = nullptr;
 		index_t _capacity = 0;
 		index_t _size = 0;
 	public:
-		dynamic_vector_t(index_t capacity, Allocator allocator)
+		dynamic_vector_t(index_t capacity, AllocatorT allocator)
 			: _allocator(std::move(allocator)) {
 			expand_to(capacity);
 		}
-		dynamic_vector_t(Allocator allocator) : dynamic_vector_t(DEFAULT_CAPACITY, std::move(allocator)) {
+		dynamic_vector_t(AllocatorT allocator) : dynamic_vector_t(DEFAULT_CAPACITY, std::move(allocator)) {
 		}
 		dynamic_vector_t() {}
 		
 		~dynamic_vector_t() {
-			alloc_traits::deallocate(_allocator, data(), capacitity());
+			alloc_traits::deallocate(_allocator, data(), capacity());
 		}
 		T* data() {
 			return static_cast<T*>(_data);
@@ -54,15 +54,16 @@ namespace foton {
 		const T& operator[](index_t index) const {
 			return data()[index];
 		}
-		static constexpr index_t capacitity() {
-			return _capacitity;
+		static constexpr index_t capacity() {
+			return _capacity;
 		}
-		static constexpr bool uses_mutex() const {
+		static constexpr bool uses_mutex() {
 			return _use_mutex;
 		}
 		void check_empty() const {
 			if (empty())
-				throw std::out_of_range("static_vector empty");
+				throw exceptions::out_of_range_t(exceptions::out_of_range_t::over_or_under_t::underflow, size(), capacity(), "dynamic_vector is empty");
+
 		}
 		T& first() {
 			check_empty();
@@ -81,7 +82,7 @@ namespace foton {
 		template<class... Args>
 		T& emplace_back(Args&& ... args) {
 			auto l = write_lock();
-			if (size() >= capacitity())
+			if (size() >= capacity())
 				grow();
 			T* ptr = &data()[size()];
 			alloc_traits::construct(_allocator, ptr, std::forward<Args>(args)...);
@@ -91,12 +92,12 @@ namespace foton {
 		template<class... Args>
 		T& emplace(Args&& ... arg) {
 			auto l = write_lock();
-			if (size() >= capacitity())
+			if (size() >= capacity())
 				grow();
 			auto l = write_lock();
 			alloc_traits::construct(_allocator, &data()[size()], std::forward<Args>(args)...);
 			_size++;
-			for (index_t i = size() - 1; i > 1; i--) {
+			for (index_t i = size() - 1; i >= 1; i--) {
 				std::swap(data()[i], data()[i - 1]);
 			}
 			return *data();
@@ -123,7 +124,7 @@ namespace foton {
 		private:
 			void expand_to(index_t new_capacity) {
 				//WARNING: THESE DON'T LOCK THEMSELVES
-				if (new_capacity < capacitity())
+				if (new_capacity < _capacity())
 					throw std::underflow_error("new_capacity smaller than current");
 				pointer_t new_mem = alloc_traits::allocate(_allocator, new_capacity);
 				if (data()) {
@@ -133,14 +134,14 @@ namespace foton {
 						//Not trivally destructible so we gotta destroy all of them our selfs
 						std::for_each(start(), end(), [](T& t) {t.~T(); });
 					}
-					alloc_traits::deallocate(_allocator, data(), capacitity());
+					alloc_traits::deallocate(_allocator, data(), _capacity());
 				}
 				_data = new_mem;
 				_capacity = new_capacity;
 			}
 			void grow() {
 				//WARNING: THESE DON'T LOCK THEMSELVES
-				expand_to(capacitity() * 2); //double in size
+				expand_to(_capacity() * 2); //double in size
 			}
 	};
 }

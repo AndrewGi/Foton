@@ -229,7 +229,8 @@
     <ClInclude Include="include\containers\atomic_queue.h" />
     <ClInclude Include="include\containers\dynamic_vector.hpp" />
     <ClInclude Include="include\containers\helpers.hpp" />
-    <ClInclude Include="include\containers\job_queue.hpp" />
+    <ClInclude Include="include\containers\stack.hpp" />
+    <ClInclude Include="include\exceptions.hpp" />
     <ClInclude Include="include\graphics\drawer.hpp" />
     <ClInclude Include="include\graphics\gl\buffer.hpp" />
     <ClInclude Include="include\graphics\gl\gl_objects.hpp" />
@@ -237,7 +238,6 @@
     <ClInclude Include="include\graphics\gl\vao.hpp" />
     <ClInclude Include="include\graphics\gl\vbo.hpp" />
     <ClInclude Include="include\graphics\mesh.hpp" />
-    <ClInclude Include="include\template_tools.h" />
     <ClInclude Include="include\types.hpp" />
     <ClInclude Include="include\audio\sound.hpp" />
     <ClInclude Include="include\audio\soundio_cpp.hpp" />
