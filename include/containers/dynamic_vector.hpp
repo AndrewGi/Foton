@@ -14,11 +14,12 @@ namespace foton {
 		index_t _capacity = 0;
 		index_t _size = 0;
 	public:
-		dynamic_vector_t(index_t capacity, AllocatorT allocator)
+		dynamic_vector_t(AllocatorT allocator, index_t capacity)
 			: _allocator(std::move(allocator)) {
+			auto l = write_lock();
 			expand_to(capacity);
 		}
-		dynamic_vector_t(AllocatorT allocator) : dynamic_vector_t(DEFAULT_CAPACITY, std::move(allocator)) {
+		dynamic_vector_t(AllocatorT allocator) : dynamic_vector_t(std::move(allocator), DEFAULT_CAPACITY) {
 		}
 		dynamic_vector_t() {}
 		
@@ -54,7 +55,7 @@ namespace foton {
 		const T& operator[](index_t index) const {
 			return data()[index];
 		}
-		static constexpr index_t capacity() {
+		index_t capacity() const {
 			return _capacity;
 		}
 		static constexpr bool uses_mutex() {
@@ -74,10 +75,10 @@ namespace foton {
 			return data()[size() - 1];
 		}
 		T* end() {
-			return &data[size()];
+			return &data()[size()];
 		}
 		T* start() {
-			return &data[0];
+			return &data()[0];
 		}
 		template<class... Args>
 		T& emplace_back(Args&& ... args) {
@@ -90,7 +91,7 @@ namespace foton {
 			return *ptr;
 		}
 		template<class... Args>
-		T& emplace(Args&& ... arg) {
+		T& emplace(Args&& ... args) {
 			auto l = write_lock();
 			if (size() >= capacity())
 				grow();
@@ -124,7 +125,7 @@ namespace foton {
 		private:
 			void expand_to(index_t new_capacity) {
 				//WARNING: THESE DON'T LOCK THEMSELVES
-				if (new_capacity < _capacity())
+				if (new_capacity < capacity())
 					throw std::underflow_error("new_capacity smaller than current");
 				pointer_t new_mem = alloc_traits::allocate(_allocator, new_capacity);
 				if (data()) {
@@ -134,14 +135,23 @@ namespace foton {
 						//Not trivally destructible so we gotta destroy all of them our selfs
 						std::for_each(start(), end(), [](T& t) {t.~T(); });
 					}
-					alloc_traits::deallocate(_allocator, data(), _capacity());
+					alloc_traits::deallocate(_allocator, data(), capacity());
 				}
 				_data = new_mem;
 				_capacity = new_capacity;
 			}
 			void grow() {
 				//WARNING: THESE DON'T LOCK THEMSELVES
-				expand_to(_capacity() * 2); //double in size
+				if (capacity() == 0)
+					expand_to(DEFAULT_CAPACITY);
+				else
+					expand_to(capacity() * 2); //double in size
+			}
+			auto write_lock() const {
+				return _maybe_mutex_t<_use_mutex>::write_lock();
+			}
+			auto read_lock() const {
+				return _maybe_mutex_t<_use_mutex>::read_lock();
 			}
 	};
 }

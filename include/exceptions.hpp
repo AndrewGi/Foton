@@ -35,11 +35,11 @@ namespace foton {
 				std::out_of_range(message), exception_t() {
 			}
 
-			struct gl_error_t : std::runtime_error {
-				gl_error_t(GLenum err, std::string msg) : std::runtime_error(std::string(
-					"glError: (") + std::to_string(err) + ") " + msg
-				) {}
-			};
+		};
+		struct gl_error_t : std::runtime_error {
+			gl_error_t(GLenum err, std::string msg) : std::runtime_error(std::string(
+				"glError: (") + std::to_string(err) + ") " + msg
+			) {}
 		};
 	}
 }

@@ -19,9 +19,12 @@ namespace foton {
 			struct circle_t : shape_t {
 				double radius;
 			};
-			struct shape_drawer_t : drawer_t {
+			struct shape_drawer_t : drawable_t {
 				std::vector<square_t> squares;
 				std::vector<rectangle_t> rectangles;
+				void draw_call(const drawable_t::context_t& context) {
+
+				}
 			};
 		}
 	}

@@ -121,6 +121,7 @@ namespace foton {
 			glClearColor(r, g, b, 1.0f);
 		}
 		void render_with(const camera::camera_t& camera) {
+			/*
 			camera.recalculate();
 			mat4f trans = camera.projection_matrix * camera.view_matrix;
 			auto cl = aquire_glfw_lock();
@@ -130,13 +131,14 @@ namespace foton {
 				For now, just a for each through all the renderable objects
 
 				Later: hoping to have this multithreaded or more advance in some way
-			*/
+			
 			drawer_context_t context{ camera.view_matrix, camera.projection_matrix };
 			std::for_each(_drawers.begin(), _drawers.end(), [&context](drawer_t* drawer) {
 				drawer->draw(context);
 			});
 			glfwSwapBuffers(_glfw_window);
 			fps_counter.frame();
+			*/
 		}
 		using keyboard_key_t = int;
 		using keyboard_action_t = int;
@@ -162,7 +164,6 @@ namespace foton {
 			if(window._on_key_cb)
 				window._on_key_cb(window, key, action, mods);
 		}
-		std::vector<drawer_t*> _drawers = {}; //maybe shouldn't use raw pointer?
 		int _width, _height;
 		//TODO: should_close callback
 		GLFWwindow* _glfw_window = nullptr;

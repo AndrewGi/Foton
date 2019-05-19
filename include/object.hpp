@@ -1,10 +1,10 @@
 #pragma once
-#include <vector>
+#include "containers/dynamic_vector.hpp"
 #include "graphics/drawer.hpp"
 #include "graphics/gl/shader.hpp"
 #include "model.hpp"
 namespace foton {
-	struct object_t : drawer_t {
+	struct object_t : drawable_t {
 		struct optional_shader_t {
 			shader::shader_t shader;
 			shader::uniform_t<mat4f> transform_uniform;
@@ -20,11 +20,11 @@ namespace foton {
 			}
 		};
 		using mat4f = Eigen::Matrix4f;
-		std::vector<model::model_t> models;
+		dynamic_vector_t<model::model_t> models;
 		std::unique_ptr<optional_shader_t> default_shader = nullptr;
 		vec3f position;
 		quatf rotation;
-		void draw_visable(const drawer_context_t& context) override {
+		void draw_call(drawable_t::context_t context) override {
 			drawer_context_t new_context = context.apply(object_mat());
 			auto draw_all = [&]() {
 				for (model::model_t& model : models) {

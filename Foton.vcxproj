@@ -233,10 +233,13 @@
     <ClInclude Include="include\exceptions.hpp" />
     <ClInclude Include="include\graphics\drawer.hpp" />
     <ClInclude Include="include\graphics\gl\buffer.hpp" />
-    <ClInclude Include="include\graphics\gl\gl_objects.hpp" />
+    <ClInclude Include="include\graphics\gl\fbo.hpp" />
+    <ClInclude Include="include\graphics\gl\rbo.hpp" />
     <ClInclude Include="include\graphics\gl\shader.hpp" />
+    <ClInclude Include="include\graphics\gl\texture.hpp" />
     <ClInclude Include="include\graphics\gl\vao.hpp" />
     <ClInclude Include="include\graphics\gl\vbo.hpp" />
+    <ClInclude Include="include\graphics\gl\viewport.hpp" />
     <ClInclude Include="include\graphics\mesh.hpp" />
     <ClInclude Include="include\types.hpp" />
     <ClInclude Include="include\audio\sound.hpp" />

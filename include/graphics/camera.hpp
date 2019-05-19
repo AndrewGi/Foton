@@ -1,7 +1,6 @@
 #pragma once
-#include "../glew/glew.h"
-#include "gl/shader.hpp"
-#include "../types.hpp"
+#include "gl/fbo.hpp"
+#include "gl/viewport.hpp"
 namespace foton {
 	namespace camera {
 		struct projection_t {
@@ -43,16 +42,35 @@ namespace foton {
 			}
 		};
 		struct camera_t {
+			struct camera_bind_t : GL::fbo_t::fbo_bind_t {
+				camera_bind_t(camera_t& camera_parent, GL::fbo_t::fbo_bind_t&& bind) :
+					_camera_parent(&camera_parent), GL::fbo_t::fbo_bind_t(std::move(bind)) {
+					camera().apply_viewport();
+				}
+				camera_t& camera() {
+					return *_camera_parent;
+				}
+				const camera_t& camera() const {
+					return *_camera_parent;
+				}
+			private:
+				camera_t* _camera_parent;
+			};
 			view_t view;
 			projection_t projection;
 			mutable mat4f view_matrix;
 			mutable mat4f projection_matrix;
+			GL::fbo_t fbo;
+			GL::viewport_t viewport;
 			void recalculate() const {
 				view_matrix = view.as_mat();
 				projection_matrix = projection.as_mat();
 			}
-			void set_viewport() const {
-				glViewport(0, 0, projection.width, projection.height);
+			void apply_viewport() {
+				viewport.apply();
+			}
+			camera_bind_t bind() {
+				return camera_bind_t(*this, fbo.bind());
 			}
 		};
 	}

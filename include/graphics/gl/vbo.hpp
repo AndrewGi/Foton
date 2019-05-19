@@ -14,7 +14,7 @@ namespace foton {
 				typed_buffer_t<T>::upload(buffer.data(), static_cast<GLsizei>(buffer.size()), usage);
 			}
 			void draw(GLsizei indicies_count, GLsizei offset = 0) const {
-				if ((indicies_count + offset) > count())
+				if ((indicies_count + offset) > typed_buffer_t<T>::count())
 					throw std::out_of_range("too many indicies");
 			}
 		};

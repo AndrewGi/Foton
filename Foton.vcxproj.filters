@@ -40,7 +40,7 @@
     <Filter Include="Header Files\foton\window">
       <UniqueIdentifier>{7e39013c-4ced-4473-8294-b1fb908b4cff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\foton\containers">
+    <Filter Include="Header Files\foton\audio\containers">
       <UniqueIdentifier>{9c6b5d86-3ac3-4ba2-9e65-c6f52413bb43}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -96,20 +96,17 @@
     <ClInclude Include="include\graphics\mesh.hpp">
       <Filter>Header Files\foton\graphics</Filter>
     </ClInclude>
-    <ClInclude Include="include\graphics\gl\gl_objects.hpp">
-      <Filter>Header Files\foton\graphics\gl</Filter>
-    </ClInclude>
     <ClInclude Include="include\containers\static_vector.hpp">
-      <Filter>Header Files\foton\containers</Filter>
+      <Filter>Header Files\foton\audio\containers</Filter>
     </ClInclude>
     <ClInclude Include="include\containers\atomic_queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\containers\dynamic_vector.hpp">
-      <Filter>Header Files\foton\containers</Filter>
+      <Filter>Header Files\foton\audio\containers</Filter>
     </ClInclude>
     <ClInclude Include="include\containers\helpers.hpp">
-      <Filter>Header Files\foton\containers</Filter>
+      <Filter>Header Files\foton\audio\containers</Filter>
     </ClInclude>
     <ClInclude Include="include\graphics\gl\vbo.hpp">
       <Filter>Header Files\foton\graphics\gl</Filter>
@@ -124,7 +121,19 @@
       <Filter>Header Files\foton</Filter>
     </ClInclude>
     <ClInclude Include="include\containers\stack.hpp">
-      <Filter>Header Files\foton\containers</Filter>
+      <Filter>Header Files\foton\audio\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\fbo.hpp">
+      <Filter>Header Files\foton\graphics\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\texture.hpp">
+      <Filter>Header Files\foton\graphics\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\rbo.hpp">
+      <Filter>Header Files\foton\graphics\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="include\graphics\gl\viewport.hpp">
+      <Filter>Header Files\foton\graphics\gl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

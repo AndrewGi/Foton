@@ -10,14 +10,14 @@ namespace foton {
 			if constexpr (_DEBUG) { //Should probably use a macro but this is cleaner for now
 				auto err = glGetError();
 				if (err != GL_NO_ERROR) {
-					throw gl_error_t(err, message);
+					throw exceptions::gl_error_t(err, message);
 				}
 			}
 		}
 		void clear_gl_errors(bool throw_on_no_error = true) {
 			auto err = glGetError();
 			if (err != GL_NO_ERROR && throw_on_no_error) {
-				throw gl_error_t(err, "clear_gl_errors called while no errors");
+				throw exceptions::gl_error_t(err, "clear_gl_errors called while no errors");
 			}
 			while (err != GL_NO_ERROR)
 				glGetError();
@@ -149,17 +149,23 @@ namespace foton {
 					}
 				}
 				GLsizei buffer_id() const {
-					return _parent->buffer_id();
+					return parent().buffer_id();
 				}
 				GLenum target() const {
-					return _parent->_target;
+					return parent().target();
 				}
 				void upload_data(const byte_t* data, size_t size_in_bytes, GLenum usage = GL_STATIC_DRAW) {
 					glBufferData(_parent->_target, size_in_bytes, data, usage);
 					_parent->_size = static_cast<GLsizei>(size_in_bytes);
 				}
+				buffer_t& parent() {
+					return *_parent;
+				}
+				const buffer_t& parent() const {
+					return *_parent;
+				}
 				GLsizei size() const {
-					return _parent->size;
+					return parent().size();
 				}
 			protected:
 				buffer_t* _parent;
@@ -213,6 +219,9 @@ namespace foton {
 			const GLint size() const {
 				return _size;
 			}
+			GLenum target() const {
+				return _target;
+			}
 		protected:
 			GLsizei _size = 0;
 			GLuint _buffer_id = 0;
@@ -221,6 +230,7 @@ namespace foton {
 		};
 		template<class T>
 		struct typed_buffer_t : buffer_t {
+			static_assert(std::is_trivial_v<T>, "only trival objects can be sent to the GPU");
 			typed_buffer_t(GLenum target) : buffer_t(target) {}
 			typed_buffer_t(GLenum target, const T* data, GLsizei count, GLenum usage) : typed_buffer_t(target) {
 				upload(data, count, usage);

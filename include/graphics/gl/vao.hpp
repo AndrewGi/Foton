@@ -3,38 +3,37 @@
 #include "../../containers/dynamic_vector.hpp"
 namespace foton::GL {
 		struct vao_t {
-			struct vertex_attribute_location_t {
-				const GLuint offset;
-				const GLuint index;
-				const GLuint stride;
-				static_assert(std::is_trivial_v<vertex_attribute_location_t>);
+			struct va_location_t {
+				GLuint offset;
+				GLuint index;
+				GLuint stride;
 			};
+			static_assert(std::is_trivially_copyable_v<va_location_t>, "we are putting this in a union, so it gotta be trivally");
 			struct ebo_info_t {
 
 			};
+			static_assert(std::is_trivially_copyable_v<ebo_info_t>, "we are putting this in a union, so it gotta be trivally");
 			struct vao_buffer_info_t {
-				GLenum draw_mode;
+				GLenum draw_shape;
 				union {
 					ebo_info_t ebo;
-					vertex_attribute_location_t vertex_attribute;
+					va_location_t vertex_attribute;
 				} info;
 			};
 
 			struct vao_any_buffer_t : buffer_t, vao_buffer_info_t {
 
 			};
+
 			template<class T>
-			struct vao_buffer_t : typed_buffer_t<T>, vao_buffer_info_t {
-				static_assert(sizeof(*this) == sizeof(vao_any_buffer_t));
-			};
-			template<class T>
-			struct vertex_attribute_buffer_object_t : vao_buffer_t<T> {
-				vertex_attribute_buffer_object_t(vbo_t<T>&& vbo, const vertex_attribute_location_t& location)
-					: vao_buffer_t<T>{ vbo_t<T>(std::move(vbo)), vertex_attribute_location_t{
+			struct vabo_t : typed_buffer_t<T>, vao_buffer_info_t {
+				vabo_t(vbo_t<T>&& vbo, const va_location_t& location)
+					: vao_buffer_t<T>{ vbo_t<T>(std::move(vbo)), va_location_t{
 					location.offset, location.index, location.stride } } {
 
 				}
 			};
+			static_assert(sizeof(vabo_t<float>) == sizeof(vao_any_buffer_t));
 
 			template<class T>
 			struct ebo_t : typed_buffer_t<T>, vao_buffer_info_t {
@@ -47,7 +46,7 @@ namespace foton::GL {
 					void draw(GLsizei element_count, GLsizei offset = 0) {
 						if ((element_count + offset) > parent().count())
 							throw ("elements out of range");
-						glDrawElements(parent().draw_mode, element_count, typed_buffer_t<T>::gl_type(), (const void*)(offset));
+						glDrawElements(parent().draw_shape, element_count, typed_buffer_t<T>::gl_type(), (const void*)(offset));
 					}
 				};
 				
@@ -74,7 +73,7 @@ namespace foton::GL {
 					return _id;
 				}
 				template<class T>
-				void assign_vertex_attribute(vertex_attribute_buffer_object_t<T>& va) {
+				void assign_vertex_attribute(vabo_t<T>& va) {
 					uint64_t offset = va.offset;
 					auto bind = va.bind();
 					glVertexAttribPointer(va.index, va.amount_per_element(), va.gl_type(), GL_FALSE, va.stride, ((const void*)offset)); //cast to void point is on purpose
@@ -83,23 +82,23 @@ namespace foton::GL {
 				}
 
 				template<class T, class... Args>
-				vertex_attribute_buffer_object_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, GLuint offset, Args&& ... vbo_args) {
+				vabo_t<T>& emplace_vertex_attribute(GLuint index, GLuint stride, GLuint offset, Args&& ... vbo_args) {
 					{
-						vertex_attribute_buffer_object_t<T> va = { {vbo_t<T>(std::forward<Args>(vbo_args)...)}, {index, stride, offset } };
-						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(vertex_attribute_buffer_object_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
-						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&va);
+						vabo_t<T> va = { {vbo_t<T>(std::forward<Args>(vbo_args)...)}, {index, stride, offset } };
+						static_assert(sizeof(vao_any_buffer_t) == sizeof(vabo_t<T>), "vbo types need to be same size/layout so we can reinterupt_cast");
+						vao_any_buffer_t& location = *reinterpret_cast<vao_any_buffer_t*>(&va);
 						_parent._buffers.emplace_back(std::move(location));
 
 					} //vbo is no longer valid
-					vertex_attribute_buffer_object_t<T>& va = *reinterpret_cast<vertex_attribute_buffer_object_t<T>*>(&*(_parent._buffers.end() - 1));
+					vabo_t<T>& va = *reinterpret_cast<vabo_t<T>*>(&*(_parent._buffers.end() - 1));
 					assign_vertex_attribute(va);
 					return va;
 				}
 				template<class T, class... Args> ebo_t<T>& emplace_ebo(Args&& ... args) {
 					{
 						ebo_t<T> ebo = { std::forward<Args>(args)..., {} };
-						static_assert(sizeof(vertex_attribute_storage_location_t) == sizeof(ebo_t<T>), "ebo types need to be same size/layout so we can reinterupt_cast");
-						vertex_attribute_storage_location_t& location = *reinterpret_cast<vertex_attribute_storage_location_t*>(&ebo);
+						static_assert(sizeof(vao_any_buffer_t) == sizeof(ebo_t<T>), "ebo types need to be same size/layout so we can reinterupt_cast");
+						vao_any_buffer_t& location = *reinterpret_cast<vao_any_buffer_t*>(&ebo);
 						_parent._buffers.emplace_back(std::move(location));
 					}
 					return *reinterpret_cast<ebo_t<T>*>(&*(_parent._buffers.end() - 1));

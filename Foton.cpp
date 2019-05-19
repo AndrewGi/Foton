@@ -4,7 +4,7 @@
 #include "pch.h"
 #include "windows/window.hpp"
 #include "2D.hpp"
-#include "graphics/gl/gl_objects.hpp"
+#include "graphics/gl/vao.hpp"
 #include "graphics/gl/shader.hpp"
 #include "graphics/mesh.hpp"
 #include "model.hpp"
