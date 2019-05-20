@@ -34,7 +34,11 @@ namespace foton::GL {
 					glFramebufferRenderbuffer(parent().target(), attachment, r_bind.internal_format(), r_bind.parent().id());
 					return std::move(r_bind);
 				}
-
+				template<class T>
+				void read_pixels(GLint x, GLint y, GLsizei width, GLsizei height, T* pixels, GLenum format = GL_RGBA) {
+					
+					glReadPixels(x, y, width, height, )
+				}
 				~fbo_bind_t() {
 					if (valid())
 						glBindFramebuffer(_target, 0);

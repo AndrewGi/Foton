@@ -22,28 +22,6 @@ namespace foton {
 			while (err != GL_NO_ERROR)
 				glGetError();
 		}
-		template<class T>
-		static constexpr std::pair<GLenum, GLint> T_gl_type() {
-			if constexpr (std::is_same_v<T, GLfloat>) {
-				return { GL_FLOAT, 1 };
-			}
-			else if constexpr (std::is_same_v<T, GLint>) {
-				return { GL_INT, 1 };
-			}
-			else if constexpr (std::is_same_v<T, GLuint>) {
-				return { GL_UNSIGNED_INT, 1 };
-			}
-			else if constexpr (std::is_same_v<T, Eigen::Vector3f>) {
-				return { GL_FLOAT, 3 };
-			}
-			else if constexpr (std::is_same_v<T, Eigen::Vector2f>) {
-				return { GL_FLOAT, 2 };
-			}
-			else {
-				//TODO: add more types
-				static_assert(false, "unsupported vertex attribute type");
-			}
-		}
 		struct wrong_enum_error_t : std::logic_error {
 			GLenum incorrect_enum;
 			wrong_enum_error_t(GLenum incorrect_enum) : incorrect_enum(incorrect_enum), std::logic_error("TODO: enum to string") {}
