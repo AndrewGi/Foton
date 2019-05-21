@@ -24,10 +24,7 @@ namespace foton {
 		constexpr vec_t(T x, T y, T z) : x(std::move(x)), y(std::move(y)), z(std::move(z)) {}
 		template<bool B = has_w, typename std::enable_if<B>::type...>
 		constexpr vec_t(T x, T y, T z, T w) : x(std::move(x)), y(std::move(y)), z(std::move(z)), w(std::move(w)) {}
-		vec_t(const T* in_data) {
-			std::copy(in_data, &in_data[_length], data());
-		}
-		vec_t(const T* in_data, uint32_t in_length) {
+		vec_t(const T* in_data, uint32_t in_length = length) {
 			std::copy(in_data, &in_data[in_length], data());
 		}
 		template<class... Args>
@@ -43,23 +40,14 @@ namespace foton {
 			T _data[length];
 		};
 		this_t operator-() const {
-			if constexpr (has_w) {
-				return this_t(-x, -y, -z, -w);
-			}
-			else if constexpr (has_z) {
-				return this_t(-x, -y, -z);
-			}
-			else if constexpr (has_y) {
-				return this_t(-x, -y);
-			}
-			else {
-				return this_t(-x);
-			}
+			this_t out(*this);
+			std::transform(out.begin(), out.end(), std::negate<T>{});
+			return out;
 
 		}
 		this_t operator+(const this_t& o) const {
 			this_t out(*this);
-			std::transform(out.begin(), out.end(), o.begin(), std::minus<T>{});
+			std::transform(out.begin(), out.end(), o.begin(), std::plus<T>{});
 			return out;
 		}
 
@@ -74,8 +62,22 @@ namespace foton {
 				val *= scalar;
 			return out;
 		}
+		this_t operator*(const this_t& o) const {
+			this_t out(*this);
+			std::transform(out.begin(), out.end(), o.begin(), std::multiplies<T>{});
+			return out;
+		}
+		T& operator[](uint_t index) {
+			return data()[index];
+		}
+		const T& operator[](uint_t index) const {
+			return data()[index];
+		}
 		T dot(const this_t& other) const {
-			return std::inner_product(begin(), end(), other.begin(), T{});
+			return (*this * other).sed();
+		}
+		T sed() const {
+			return std::accumulate(begin(), end(), T{})
 		}
 		T* data() {
 			return reinterpret_cast<T*>(this);
@@ -95,9 +97,16 @@ namespace foton {
 		const T* end() const {
 			return &data()[length];
 		}
+	private:
+		void set_diagonal(const T& value) {
+			for (uint i = 0; i < std::min<uint>{}(rows, cols); i++) {
+				data()[i] = value;
+			}
+		}
 	};
 	template<class T, uint_t _rows, uint_t _cols>
-	class mat_t {
+	struct mat_t {
+		struct identity_t {};
 		static constexpr uint_t rows = _rows;
 		static constexpr uint_t cols = _cols;
 		using type = T;
@@ -108,11 +117,42 @@ namespace foton {
 
 
 		*/
-		using vecT = rowT; 
 
+		mat_t(identity_t) {
+			set_diagonal(1);
+		}
+		T* data() {
+			return _data;
+		}
+		const T* data() const {
+			return  _data;
+		}
+		rowT* begin() {
+			return _data;
+		}
+		const rowT* begin() const {
+			return _data;
+		}
+		rowT* end() {
+			return &_data[rows];
+		}
+		const rowT& end() const {
+			return &_data[rows];
+		}
+		void zero() {
+			std::for_each(begin(), end(), [](rowT& row) {row.zero(); });
+		}
+		void set_diagonal(const T& value) {
+			for (uint_t i = 0; i < std::min<uint_t>{}(rows, cols); i++) {
+				data()[i][i] = value;
+			}
+		}
+		rowT operator*(const rowT& o) {
 
-
-	}
+		}
+	private:
+		rowT _data[cols];
+	};
 	using vec2f_t = vec_t<float, 2>;
 	using vec3f_t = vec_t<float, 3>;
 	using vec4f_t = vec_t<float, 4>;
