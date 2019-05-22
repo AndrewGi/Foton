@@ -77,7 +77,7 @@ namespace foton {
 			return (*this * other).sed();
 		}
 		T sed() const {
-			return std::accumulate(begin(), end(), T{})
+			return std::accumulate(begin(), end(), T{});
 		}
 		T* data() {
 			return reinterpret_cast<T*>(this);
@@ -98,11 +98,6 @@ namespace foton {
 			return &data()[length];
 		}
 	private:
-		void set_diagonal(const T& value) {
-			for (uint i = 0; i < std::min<uint>{}(rows, cols); i++) {
-				data()[i] = value;
-			}
-		}
 	};
 	template<class T, uint_t _rows, uint_t _cols>
 	struct mat_t {
@@ -143,7 +138,7 @@ namespace foton {
 			std::for_each(begin(), end(), [](rowT& row) {row.zero(); });
 		}
 		void set_diagonal(const T& value) {
-			for (uint_t i = 0; i < std::min<uint_t>{}(rows, cols); i++) {
+			for (uint_t i = 0; i < std::min<uint_t>(rows, cols); i++) {
 				data()[i][i] = value;
 			}
 		}
